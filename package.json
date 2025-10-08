@@ -17,8 +17,17 @@
     "test:openai": "tsx scripts/test-openai-key.ts",
     "test:claude": "tsx scripts/test-claude-key.ts",
     "test:tools": "tsx scripts/test-tools-only.ts",
+    "test:ai": "tsx scripts/test-ai-with-tools.ts",
+    "test:claude-fallback": "tsx scripts/test-claude-fallback.ts",
     "test:widget-mock": "tsx scripts/test-widget-mock.ts",
-    "test:widget-prod": "tsx scripts/test-widget-production.ts"
+    "test:widget-prod": "tsx scripts/test-widget-production.ts",
+    "test:final": "tsx scripts/test-final-validation.ts",
+    "test:visual": "tsx scripts/test-visual-widget.ts",
+    "test:simulation": "tsx scripts/test-widget-simulation.ts",
+    "test:real-widget": "tsx scripts/test-real-widget.ts",
+    "test:api-route": "tsx scripts/test-api-route.ts",
+    "test:logo": "tsx scripts/test-logo-visual.ts",
+    "test:logo-simple": "tsx scripts/test-logo-simple.ts"
   },
   "devDependencies": {
     "playwright": "^1.56.0",
