@@ -9,10 +9,13 @@
   ],
   "scripts": {
     "dev": "turbo run dev",
+    "dev:admin": "pnpm --filter @snkhouse/admin dev",
+    "dev:widget": "pnpm --filter @snkhouse/widget dev",
     "build": "turbo run build",
     "test": "turbo run test",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "kill:ports": "node scripts/kill-ports.js",
     "check:secrets": "tsx scripts/check-secrets.ts",
     "test:openai": "tsx scripts/test-openai-key.ts",
     "test:claude": "tsx scripts/test-claude-key.ts",
@@ -27,7 +30,8 @@
     "test:real-widget": "tsx scripts/test-real-widget.ts",
     "test:api-route": "tsx scripts/test-api-route.ts",
     "test:logo": "tsx scripts/test-logo-visual.ts",
-    "test:logo-simple": "tsx scripts/test-logo-simple.ts"
+    "test:logo-simple": "tsx scripts/test-logo-simple.ts",
+    "test:admin": "npx tsx scripts/test-admin-dashboard.ts"
   },
   "devDependencies": {
     "playwright": "^1.56.0",
