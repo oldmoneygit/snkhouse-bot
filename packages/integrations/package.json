@@ -6,7 +6,9 @@
   "scripts": {
     "test:woo": "tsx src/woocommerce/test-client.ts",
     "test:woo:simple": "tsx src/woocommerce/test-simple.ts",
-    "test:woo:mock": "tsx src/woocommerce/test-mock.ts"
+    "test:woo:mock": "tsx src/woocommerce/test-mock.ts",
+    "test:woo:diagnostic": "tsx src/woocommerce/test-auth-diagnostic.ts",
+    "prepare": "husky install"
   },
   "dependencies": {
     "@woocommerce/woocommerce-rest-api": "^1.0.1",
@@ -15,7 +17,8 @@
   },
   "devDependencies": {
     "@types/node": "^20.19.19",
-    "typescript": "^5.3.0",
-    "tsx": "^4.19.2"
+    "husky": "^9.1.7",
+    "tsx": "^4.19.2",
+    "typescript": "^5.3.0"
   }
 }

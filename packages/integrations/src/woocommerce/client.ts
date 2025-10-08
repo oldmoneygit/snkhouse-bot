@@ -24,9 +24,9 @@ export class WooCommerceClient {
 
     this.client = axios.create({
       baseURL: `${this.config.url}/wp-json/${this.config.version}`,
-      auth: {
-        username: this.config.consumerKey,
-        password: this.config.consumerSecret,
+      params: {
+        consumer_key: this.config.consumerKey,
+        consumer_secret: this.config.consumerSecret,
       },
       headers: {
         'Content-Type': 'application/json',

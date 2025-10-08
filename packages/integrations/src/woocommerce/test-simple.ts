@@ -27,9 +27,9 @@ async function testSimpleWooCommerce() {
     console.log(`   URL: ${apiUrl}`);
     
     const response = await axios.get(apiUrl, {
-      auth: {
-        username: consumerKey,
-        password: consumerSecret,
+      params: {
+        consumer_key: consumerKey,
+        consumer_secret: consumerSecret,
       },
       headers: {
         'Content-Type': 'application/json',
@@ -47,9 +47,9 @@ async function testSimpleWooCommerce() {
     console.log(`   URL: ${productsUrl}`);
     
     const productsResponse = await axios.get(productsUrl, {
-      auth: {
-        username: consumerKey,
-        password: consumerSecret,
+      params: {
+        consumer_key: consumerKey,
+        consumer_secret: consumerSecret,
       },
       headers: {
         'Content-Type': 'application/json',
