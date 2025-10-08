@@ -1,6 +1,3 @@
-<<<<<<< HEAD
-# snkhouse-bot
-=======
 # 🚀 SNKHOUSE - Ecossistema de Atendimento Automatizado
 
 Sistema completo de atendimento automatizado com IA para a loja SNKHOUSE, incluindo widget de chat no site e integração com WhatsApp para Argentina.
