@@ -1,0 +1,224 @@
+.dashboard {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: radial-gradient(circle at top left, #1f2937, #0f172a 55%);
+  color: #e2e8f0;
+  font-family: var(--font-inter);
+}
+
+.header {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(15, 23, 42, 0.9);
+  padding: 24px 32px;
+}
+
+.headerContent {
+  margin: 0 auto;
+  max-width: 1080px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.headerTitle {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 600;
+}
+
+.headerSubtitle {
+  margin: 0;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.32em;
+  color: rgba(148, 163, 184, 0.8);
+}
+
+.headerSync {
+  text-align: right;
+}
+
+.headerSync p {
+  margin: 0;
+}
+
+.headerSync p:first-child {
+  font-size: 13px;
+  color: rgba(148, 163, 184, 0.8);
+}
+
+.main {
+  flex: 1;
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 48px 32px 64px;
+  display: flex;
+  flex-direction: column;
+  gap: 48px;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #cbd5f5;
+}
+
+.metricsGrid {
+  margin-top: 16px;
+  display: grid;
+  gap: 24px;
+}
+
+@media (min-width: 768px) {
+  .metricsGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.metricCard {
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(15, 23, 42, 0.75);
+  padding: 24px;
+  border-radius: 16px;
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.45);
+}
+
+.metricLabel {
+  margin: 0;
+  font-size: 14px;
+  color: rgba(148, 163, 184, 0.8);
+}
+
+.metricValue {
+  margin: 12px 0 0;
+  font-size: 32px;
+  font-weight: 600;
+  color: #f8fafc;
+}
+
+.metricTrend {
+  margin: 12px 0 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: #34d399;
+}
+
+.contentGrid {
+  display: grid;
+  gap: 24px;
+}
+
+@media (min-width: 1024px) {
+  .contentGrid {
+    grid-template-columns: 2fr 1fr;
+  }
+}
+
+.panel {
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(15, 23, 42, 0.75);
+  padding: 24px;
+  border-radius: 16px;
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.45);
+}
+
+.panelDescription {
+  margin: 8px 0 0;
+  font-size: 14px;
+  color: rgba(148, 163, 184, 0.8);
+}
+
+.sessionList {
+  margin: 24px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sessionItem {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.sessionItem:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.sessionName {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: #f8fafc;
+}
+
+.sessionStatus {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: rgba(148, 163, 184, 0.8);
+}
+
+.sessionButton {
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #e2e8f0;
+  background: transparent;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.sessionButton:hover {
+  border-color: #34d399;
+  color: #34d399;
+}
+
+.shortcuts {
+  margin: 24px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.shortcutItem {
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(15, 23, 42, 0.65);
+  border-radius: 12px;
+  padding: 18px;
+}
+
+.shortcutTitle {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 500;
+  color: #f8fafc;
+}
+
+.shortcutDescription {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: rgba(148, 163, 184, 0.8);
+}
+
+.footer {
+  margin-top: auto;
+  border-top: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(15, 23, 42, 0.9);
+  text-align: center;
+  font-size: 12px;
+  color: rgba(148, 163, 184, 0.8);
+  padding: 16px;
+}
