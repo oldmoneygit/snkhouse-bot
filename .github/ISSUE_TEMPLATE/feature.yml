@@ -1,0 +1,56 @@
+name: ✨ Feature Request
+description: Suggest a new feature for the project
+title: "[FEATURE] "
+labels: ["✨ feature", "📋 triage"]
+body:
+  - type: input
+    id: task-id
+    attributes:
+      label: Task ID
+      description: Sprint task ID (e.g., SNKH-3)
+      placeholder: "SNKH-XX"
+    validations:
+      required: false
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What feature do you want to add?
+      placeholder: "Describe the feature..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: How will we know this is done?
+      placeholder: |
+        - [ ] Criterion 1
+        - [ ] Criterion 2
+        - [ ] Criterion 3
+    validations:
+      required: false
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      options:
+        - 🔴 High
+        - 🟡 Medium
+        - 🟢 Low
+    validations:
+      required: false
+
+  - type: dropdown
+    id: sprint
+    attributes:
+      label: Sprint
+      options:
+        - Week 1
+        - Week 2
+        - Week 3
+    validations:
+      required: false

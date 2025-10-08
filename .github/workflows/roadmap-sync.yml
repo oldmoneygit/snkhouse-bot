@@ -1,0 +1,82 @@
+name: Roadmap Sync
+
+on:
+  issues:
+    types: [closed, reopened]
+  pull_request:
+    types: [merged]
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+jobs:
+  update-roadmap:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Calculate progress
+        uses: actions/github-script@v7
+        id: calculate
+        with:
+          script: |
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'all',
+              per_page: 100
+            });
+            
+            const sprintIssues = issues.filter(i => 
+              i.labels.some(l => l.name.includes('week-'))
+            );
+            
+            const total = sprintIssues.length;
+            const closed = sprintIssues.filter(i => i.state === 'closed').length;
+            const progress = total > 0 ? Math.round((closed / total) * 100) : 0;
+            
+            const week1 = sprintIssues.filter(i => 
+              i.labels.some(l => l.name === '📅 week-1')
+            );
+            const week2 = sprintIssues.filter(i => 
+              i.labels.some(l => l.name === '📅 week-2')
+            );
+            const week3 = sprintIssues.filter(i => 
+              i.labels.some(l => l.name === '📅 week-3')
+            );
+            
+            const week1Progress = week1.length > 0 ? 
+              Math.round((week1.filter(i => i.state === 'closed').length / week1.length) * 100) : 0;
+            const week2Progress = week2.length > 0 ? 
+              Math.round((week2.filter(i => i.state === 'closed').length / week2.length) * 100) : 0;
+            const week3Progress = week3.length > 0 ? 
+              Math.round((week3.filter(i => i.state === 'closed').length / week3.length) * 100) : 0;
+            
+            core.setOutput('total', total);
+            core.setOutput('closed', closed);
+            core.setOutput('progress', progress);
+            core.setOutput('week1Progress', week1Progress);
+            core.setOutput('week2Progress', week2Progress);
+            core.setOutput('week3Progress', week3Progress);
+
+      - name: Update README
+        run: |
+          PROGRESS=${{ steps.calculate.outputs.progress }}
+          FILLED=$((PROGRESS / 10))
+          EMPTY=$((10 - FILLED))
+          BAR=$(printf '█%.0s' $(seq 1 $FILLED))$(printf '░%.0s' $(seq 1 $EMPTY))
+          
+          echo "Progress: $BAR $PROGRESS%"
+          echo "Week 1: ${{ steps.calculate.outputs.week1Progress }}%"
+          echo "Week 2: ${{ steps.calculate.outputs.week2Progress }}%"
+          echo "Week 3: ${{ steps.calculate.outputs.week3Progress }}%"
+
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --quiet && git diff --staged --quiet || git commit -m "chore: update roadmap progress [skip ci]"
+          git push
