@@ -20,9 +20,11 @@ export async function generateResponseWithFallback(
     console.error('❌ [Agent] OpenAI falhou:', openaiError.message);
     
     try {
-      // Fallback para Anthropic (sem tools)
-      console.log('🔄 [Agent] Tentando Anthropic como fallback...');
-      return await generateWithAnthropic(messages);
+      // Fallback para Anthropic Claude Haiku 3.5 (sem tools, mais barato)
+      console.log('🔄 [Agent] Tentando Claude Haiku 3.5 como fallback...');
+      return await generateWithAnthropic(messages, { 
+        model: 'claude-3-5-haiku-20241022' 
+      });
 
     } catch (anthropicError: any) {
       console.error('❌ [Agent] Anthropic também falhou:', anthropicError.message);
