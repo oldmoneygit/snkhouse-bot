@@ -7,6 +7,77 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.8.0] - 2025-01-10
+
+### 📦 Orders Tools (SNKH-16.5) - NEW
+
+#### WooCommerce Orders Integration
+- **4 new READ-ONLY tools** for querying WooCommerce orders
+  - `get_order_status()` - Get current order status
+  - `search_customer_orders()` - Search all customer orders by email/ID
+  - `get_order_details()` - Get complete order details (products, shipping, tracking)
+  - `track_shipment()` - Get tracking code and shipment info
+
+#### Security & Compliance
+- **Customer ID validation** on ALL order queries (100% secure ownership check)
+- **Sanitized logs** for LGPD compliance (customer IDs partially masked)
+- **Separate cache** with 5-minute TTL (sensitive data requires faster refresh)
+- **Unauthorized access blocking** - throws error if customer_id mismatch
+
+#### Integration & Tracking
+- **SNKH-15 metrics tracking** integrated in all 4 tools
+  - Execution time monitoring
+  - Success/failure tracking
+  - Sanitized parameters logging
+  - Conversation ID tracking
+- **Error handling** with detailed, user-friendly messages
+
+#### Types & Architecture
+- **9 new TypeScript interfaces** (`packages/integrations/src/woocommerce/types-orders.ts`)
+  - WooOrder, OrderStatusData, OrderDetailsData, CustomerOrdersData
+  - WooOrderBilling, WooOrderShipping, WooOrderLineItem, WooOrderMetaData
+- **Orders client** (`packages/integrations/src/woocommerce/orders.ts`)
+  - Cache management with auto-cleanup
+  - Ownership validation function
+  - Customer ID sanitization for logs
+  - 4 tool implementations (~400 lines)
+
+#### Testing & Documentation
+- **Test script** (`scripts/test-orders-tools.ts`)
+  - Tests all 4 tools
+  - Security validation tests
+  - Mock-friendly for CI/CD
+- **Complete documentation** (`docs/16.5-orders-tools.md`)
+  - Usage examples
+  - Security guidelines
+  - Architecture overview
+  - Future roadmap (Fase 2 - write operations)
+
+#### AI Agent Enhancement
+- **4 new tool definitions** in `packages/ai-agent/src/tools/definitions.ts`
+- **4 new tool handlers** in `packages/ai-agent/src/tools/handlers.ts`
+- **Exports updated** in `packages/integrations/src/woocommerce/index.ts`
+
+### 🎯 Impact
+**AI Agent now has complete, secure access to WooCommerce orders!**
+
+**Before:**
+```
+User: "Onde está meu pedido #12345?"
+Bot: "Lo siento, no tengo acceso a pedidos."
+```
+
+**After:**
+```
+User: "Onde está meu pedido #12345?"
+Bot: [validates customer_id → fetches order → returns status]
+Bot: "¡Hola! Tu pedido #12345 está 'processing'.
+     Despachado el 08/01 con tracking BR123456789AR.
+     Llegada estimada: 12/01. 📦"
+```
+
+---
+
 ## [0.8.0] - 2025-01-09
 
 ### Added - SNKH-16: Knowledge Base System ✨

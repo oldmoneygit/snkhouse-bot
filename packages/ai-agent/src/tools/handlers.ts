@@ -1,4 +1,11 @@
-import { getWooCommerceClient, WooCommerceProduct } from '@snkhouse/integrations';
+import {
+  getWooCommerceClient,
+  WooCommerceProduct,
+  getOrderStatus,
+  searchCustomerOrders,
+  getOrderDetails,
+  trackShipment
+} from '@snkhouse/integrations';
 import { trackToolCall, trackProductSearch } from '@snkhouse/analytics';
 
 // =====================================================
@@ -271,7 +278,135 @@ export async function executeToolCall(toolName: string, args: any): Promise<stri
     
     case 'get_products_on_sale':
       return getProductsOnSale(args.limit);
-    
+
+    // =====================================================
+    // ORDERS TOOLS - SNKH-16.5
+    // =====================================================
+
+    case 'get_order_status': {
+      const startTime = Date.now();
+      try {
+        const { order_id, customer_id } = args;
+        const result = await getOrderStatus(order_id, customer_id);
+
+        const executionTime = Date.now() - startTime;
+        await trackToolCall({
+          tool_name: 'get_order_status',
+          parameters: { order_id, customer_id: 'cust_***' },
+          execution_time_ms: executionTime,
+          success: true,
+          conversation_id: args.conversation_id
+        });
+
+        // Formatar resposta para IA
+        return JSON.stringify(result, null, 2);
+      } catch (error: any) {
+        const executionTime = Date.now() - startTime;
+        await trackToolCall({
+          tool_name: 'get_order_status',
+          parameters: { order_id: args.order_id, customer_id: 'cust_***' },
+          execution_time_ms: executionTime,
+          success: false,
+          error_message: error.message,
+          conversation_id: args.conversation_id
+        });
+        return `Error: ${error.message}`;
+      }
+    }
+
+    case 'search_customer_orders': {
+      const startTime = Date.now();
+      try {
+        const { email_or_customer_id, limit = 5 } = args;
+        const result = await searchCustomerOrders(email_or_customer_id, limit);
+
+        const executionTime = Date.now() - startTime;
+        await trackToolCall({
+          tool_name: 'search_customer_orders',
+          parameters: {
+            identifier: typeof email_or_customer_id === 'number' ? 'cust_***' : 'email_***',
+            limit
+          },
+          execution_time_ms: executionTime,
+          success: true,
+          conversation_id: args.conversation_id
+        });
+
+        return JSON.stringify(result, null, 2);
+      } catch (error: any) {
+        const executionTime = Date.now() - startTime;
+        await trackToolCall({
+          tool_name: 'search_customer_orders',
+          parameters: { identifier: '***', limit: args.limit },
+          execution_time_ms: executionTime,
+          success: false,
+          error_message: error.message,
+          conversation_id: args.conversation_id
+        });
+        return `Error: ${error.message}`;
+      }
+    }
+
+    case 'get_order_details': {
+      const startTime = Date.now();
+      try {
+        const { order_id, customer_id } = args;
+        const result = await getOrderDetails(order_id, customer_id);
+
+        const executionTime = Date.now() - startTime;
+        await trackToolCall({
+          tool_name: 'get_order_details',
+          parameters: { order_id, customer_id: 'cust_***' },
+          execution_time_ms: executionTime,
+          success: true,
+          conversation_id: args.conversation_id
+        });
+
+        return JSON.stringify(result, null, 2);
+      } catch (error: any) {
+        const executionTime = Date.now() - startTime;
+        await trackToolCall({
+          tool_name: 'get_order_details',
+          parameters: { order_id: args.order_id, customer_id: 'cust_***' },
+          execution_time_ms: executionTime,
+          success: false,
+          error_message: error.message,
+          conversation_id: args.conversation_id
+        });
+        return `Error: ${error.message}`;
+      }
+    }
+
+    case 'track_shipment': {
+      const startTime = Date.now();
+      try {
+        const { order_id, customer_id } = args;
+        const result = await trackShipment(order_id, customer_id);
+
+        const executionTime = Date.now() - startTime;
+        await trackToolCall({
+          tool_name: 'track_shipment',
+          parameters: { order_id, customer_id: 'cust_***' },
+          execution_time_ms: executionTime,
+          success: true,
+          conversation_id: args.conversation_id
+        });
+
+        return JSON.stringify(result, null, 2);
+      } catch (error: any) {
+        const executionTime = Date.now() - startTime;
+        await trackToolCall({
+          tool_name: 'track_shipment',
+          parameters: { order_id: args.order_id, customer_id: 'cust_***' },
+          execution_time_ms: executionTime,
+          success: false,
+          error_message: error.message,
+          conversation_id: args.conversation_id
+        });
+        return `Error: ${error.message}`;
+      }
+    }
+
     default:
       console.error(`❌ [Tool] Tool desconhecida: ${toolName}`);
       return `Error: Tool "${toolName}" no encontrada.`;

@@ -8,3 +8,23 @@ export type {
   ProductSearchParams,
   OrderSearchParams,
 } from './types';
+
+// Orders Tools - SNKH-16.5
+export {
+  getOrderStatus,
+  searchCustomerOrders,
+  getOrderDetails,
+  trackShipment,
+  invalidateOrderCache
+} from './orders';
+
+export type {
+  WooOrder,
+  OrderStatusData,
+  OrderDetailsData,
+  CustomerOrdersData,
+  WooOrderBilling,
+  WooOrderShipping,
+  WooOrderLineItem,
+  WooOrderMetaData
+} from './types-orders';
