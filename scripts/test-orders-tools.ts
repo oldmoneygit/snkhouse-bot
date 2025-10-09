@@ -18,10 +18,10 @@ async function runTests() {
   console.log('🧪 TESTE: ORDERS TOOLS (SNKH-16.5)\n');
   console.log('='.repeat(60));
 
-  // IMPORTANTE: Substitua pelos IDs reais do seu WooCommerce
-  const TEST_ORDER_ID = 123; // ID de pedido existente
-  const TEST_CUSTOMER_ID = 1; // ID do cliente dono do pedido
-  const TEST_EMAIL = 'cliente@test.com'; // Email do cliente
+  // IDs REAIS do WooCommerce SNKHOUSE (obtidos via API)
+  const TEST_ORDER_ID = 27072; // Pedido real existente
+  const TEST_CUSTOMER_ID = 3; // Cliente dono do pedido #27072
+  const TEST_EMAIL = 'suporte@stealthify.ai'; // Email do cliente ID 3
 
   let passedTests = 0;
   const totalTests = 5;

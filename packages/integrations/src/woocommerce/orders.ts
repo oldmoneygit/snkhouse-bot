@@ -92,8 +92,12 @@ async function fetchOrderById(orderId: number, customerId: number): Promise<WooO
 
   try {
     const client = getWooCommerceClient();
-    const response = await client.get(`orders/${orderId}`);
-    const order = response.data as WooOrder;
+    const order = await client.getOrder(orderId, false) as unknown as WooOrder;
+
+    if (!order) {
+      console.error('❌ [Orders] Pedido não encontrado:', orderId);
+      throw new Error(`Pedido #${orderId} não encontrado`);
+    }
 
     // VALIDAÇÃO CRÍTICA: verificar ownership
     validateOrderOwnership(order, customerId);
@@ -109,10 +113,6 @@ async function fetchOrderById(orderId: number, customerId: number): Promise<WooO
 
     return order;
   } catch (error: any) {
-    if (error.response?.status === 404) {
-      console.error('❌ [Orders] Pedido não encontrado:', orderId);
-      throw new Error(`Pedido #${orderId} não encontrado`);
-    }
     if (error.message.includes('Unauthorized')) {
       throw error; // Re-throw security errors
     }
@@ -171,32 +171,17 @@ export async function searchCustomerOrders(
 
   try {
     const client = getWooCommerceClient();
-
-    // Determinar parâmetro de busca
-    const params: any = {
-      per_page: Math.min(limit, 10), // Máximo 10
-      orderby: 'date',
-      order: 'desc'
-    };
+    let orders: any[];
 
     if (typeof emailOrCustomerId === 'number') {
-      params.customer = emailOrCustomerId;
+      // Buscar por customer_id
+      const allOrders = await client.getOrders({ customer: emailOrCustomerId, per_page: Math.min(limit, 10) });
+      orders = allOrders as any[];
     } else {
-      // Buscar customer por email primeiro
-      const customersResponse = await client.get('customers', {
-        params: { email: emailOrCustomerId }
-      });
-
-      if (!customersResponse.data || customersResponse.data.length === 0) {
-        console.warn('⚠️ [Orders] Nenhum cliente encontrado com este email');
-        return [];
-      }
-
-      params.customer = customersResponse.data[0].id;
+      // Buscar por email
+      const emailOrders = await client.getOrdersByCustomerEmail(emailOrCustomerId);
+      orders = emailOrders.slice(0, Math.min(limit, 10)) as any[];
     }
-
-    const response = await client.get('orders', { params });
-    const orders = response.data as WooOrder[];
 
     console.log(`✅ [Orders] ${orders.length} pedidos encontrados`);
 
