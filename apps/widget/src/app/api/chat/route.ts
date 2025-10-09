@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateResponseWithFallback } from '@snkhouse/ai-agent';
 import { supabaseAdmin } from '@snkhouse/database';
+import { trackAIRequest, trackAIResponse } from '@snkhouse/analytics';
 import * as path from 'path';
 import { config } from 'dotenv';
 
@@ -191,9 +192,30 @@ export async function POST(request: NextRequest) {
     }
 
     // 6. Gerar resposta com IA
+    const aiStartTime = Date.now();
+
+    // TRACKING: AI Request
+    await trackAIRequest({
+      model: 'gpt-4o-mini',
+      prompt_tokens: messages.reduce((sum, msg) => sum + Math.ceil(msg.content.length / 4), 0),
+      conversation_id: currentConversationId,
+      user_message: message
+    });
+
     const response = await generateResponseWithFallback(messages);
+    const aiResponseTime = Date.now() - aiStartTime;
 
     console.log('🤖 [Widget API] Resposta generada:', response.model);
+
+    // TRACKING: AI Response
+    await trackAIResponse({
+      model: response.model,
+      completion_tokens: Math.ceil(response.content.length / 4), // Estimativa
+      total_tokens: Math.ceil((message.length + response.content.length) / 4), // Estimativa
+      response_time_ms: aiResponseTime,
+      conversation_id: currentConversationId,
+      success: true
+    });
 
     // 7. Salvar resposta do assistente
     const { error: assistantMessageError } = await supabaseAdmin
@@ -224,6 +246,21 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('❌ [Widget API] Error:', error.message);
     console.error('❌ [Widget API] Stack:', error.stack);
+
+    // TRACKING: AI Response Failed
+    try {
+      await trackAIResponse({
+        model: 'unknown',
+        completion_tokens: 0,
+        total_tokens: 0,
+        response_time_ms: 0,
+        conversation_id: 'error',
+        success: false,
+        error: error.message
+      });
+    } catch (trackError) {
+      console.error('❌ [Widget API] Error tracking failed response:', trackError);
+    }
 
     return NextResponse.json(
       {

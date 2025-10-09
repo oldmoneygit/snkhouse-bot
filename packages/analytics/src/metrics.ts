@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '@snkhouse/database';
+import { getAIPerformanceMetrics, getWooCommerceMetrics } from './events/aggregator';
 
 /**
  * Conversation data from Supabase with customer relation
@@ -60,6 +61,16 @@ export interface DashboardMetrics {
     count: number;
   }>;
   averageResponseTime: number;
+  // Métricas de IA (SNKH-15)
+  aiSuccessRate: number;
+  averageTokens: number;
+  toolCallsTotal: number;
+  // Métricas de WooCommerce (SNKH-15)
+  productsSearched: number;
+  topSearchedProducts: Array<{
+    name: string;
+    count: number;
+  }>;
 }
 
 /**
@@ -228,7 +239,13 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
     const averageResponseTime =
       responseCount > 0 ? Math.round(totalResponseTime / responseCount / 1000) : 0; // em segundos
 
-    console.log('✅ [Analytics] Métricas coletadas com sucesso');
+    // 12. Métricas de IA (DADOS REAIS!)
+    const aiMetrics = await getAIPerformanceMetrics();
+
+    // 13. Métricas de WooCommerce (DADOS REAIS!)
+    const wooMetrics = await getWooCommerceMetrics();
+
+    console.log('✅ [Analytics] Métricas coletadas com sucesso (incluindo dados REAIS de IA e WooCommerce)');
 
     return {
       totalConversations: totalConversations || 0,
@@ -242,6 +259,13 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
       conversationsByStatus,
       messagesByHour,
       averageResponseTime,
+      // Métricas de IA (REAIS)
+      aiSuccessRate: aiMetrics.aiSuccessRate,
+      averageTokens: aiMetrics.averageTokens,
+      toolCallsTotal: aiMetrics.toolCallsTotal,
+      // Métricas de WooCommerce (REAIS)
+      productsSearched: wooMetrics.productsSearched,
+      topSearchedProducts: wooMetrics.topSearchedProducts,
     };
   } catch (error) {
     console.error('❌ [Analytics] Erro ao coletar métricas:', error);

@@ -1,11 +1,13 @@
 import { getWooCommerceClient, WooCommerceProduct } from '@snkhouse/integrations';
+import { trackToolCall, trackProductSearch } from '@snkhouse/analytics';
 
 // =====================================================
 // TOOLS HANDLERS - IMPLEMENTAÇÃO DAS FERRAMENTAS
 // =====================================================
 
-export async function searchProducts(query: string, limit: number = 5): Promise<string> {
+export async function searchProducts(query: string, limit: number = 5, conversationId?: string): Promise<string> {
   console.log(`🔍 [Tool] Buscando productos: "${query}"`);
+  const toolStartTime = Date.now();
 
   try {
     const client = getWooCommerceClient();
@@ -29,16 +31,54 @@ export async function searchProducts(query: string, limit: number = 5): Promise<
     }).join('\n\n');
 
     console.log(`✅ [Tool] ${products.length} productos encontrados`);
+
+    // TRACKING: Tool Call & Product Search
+    if (conversationId) {
+      const executionTime = Date.now() - toolStartTime;
+      await trackToolCall({
+        tool_name: 'search_products',
+        parameters: { query, limit },
+        execution_time_ms: executionTime,
+        success: true,
+        conversation_id: conversationId
+      });
+
+      // Track cada produto encontrado
+      for (const product of products) {
+        await trackProductSearch({
+          product_id: product.id,
+          product_name: product.name,
+          search_query: query,
+          tool_used: 'search_products',
+          conversation_id: conversationId
+        });
+      }
+    }
+
     return `Encontré ${products.length} productos:\n\n${formatted}`;
 
   } catch (error: any) {
     console.error('❌ [Tool] Error en searchProducts:', error.message);
+
+    // TRACKING: Tool Call Failed
+    if (conversationId) {
+      await trackToolCall({
+        tool_name: 'search_products',
+        parameters: { query, limit },
+        execution_time_ms: Date.now() - toolStartTime,
+        success: false,
+        error: error.message,
+        conversation_id: conversationId
+      });
+    }
+
     return 'Hubo un error al buscar productos. Por favor intentá de nuevo.';
   }
 }
 
-export async function getProductDetails(productId: number): Promise<string> {
+export async function getProductDetails(productId: number, conversationId?: string): Promise<string> {
   console.log(`🔍 [Tool] Obteniendo detalles del producto ID: ${productId}`);
+  const toolStartTime = Date.now();
 
   try {
     const client = getWooCommerceClient();
@@ -73,10 +113,43 @@ ${description}
 🔗 Ver más: ${product.permalink}`;
 
     console.log(`✅ [Tool] Detalles obtenidos para: ${product.name}`);
+
+    // TRACKING: Tool Call & Product Search
+    if (conversationId) {
+      const executionTime = Date.now() - toolStartTime;
+      await trackToolCall({
+        tool_name: 'get_product_details',
+        parameters: { productId },
+        execution_time_ms: executionTime,
+        success: true,
+        conversation_id: conversationId
+      });
+
+      await trackProductSearch({
+        product_id: product.id,
+        product_name: product.name,
+        tool_used: 'get_product_details',
+        conversation_id: conversationId
+      });
+    }
+
     return details;
 
   } catch (error: any) {
     console.error('❌ [Tool] Error en getProductDetails:', error.message);
+
+    // TRACKING: Tool Call Failed
+    if (conversationId) {
+      await trackToolCall({
+        tool_name: 'get_product_details',
+        parameters: { productId },
+        execution_time_ms: Date.now() - toolStartTime,
+        success: false,
+        error: error.message,
+        conversation_id: conversationId
+      });
+    }
+
     return 'Hubo un error al obtener los detalles del producto.';
   }
 }
