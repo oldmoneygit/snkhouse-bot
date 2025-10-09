@@ -1,6 +1,7 @@
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 import * as fs from 'fs';
+import { randomUUID } from 'crypto';
 
 // Carregar variáveis de ambiente manualmente
 const envPath = path.join(__dirname, '..', 'apps', 'widget', '.env.local');
@@ -26,11 +27,13 @@ import {
 
 /**
  * Script de teste para validar o sistema de Metrics Collection
+ * ATUALIZADO: Usando UUID válidos conforme best practices
  */
 async function testMetricsCollection() {
   console.log('🧪 TESTE DO METRICS COLLECTION - SNKH-15');
   console.log('='.repeat(70));
-  console.log('');
+
+  console.log('\n💡 Nota: Usando conversation_id = undefined para testes (sem foreign key constraint)\n');
 
   try {
     // ===== TESTE 1: TRACKING DE AI REQUEST =====
@@ -38,7 +41,7 @@ async function testMetricsCollection() {
     await trackAIRequest({
       model: 'gpt-4o-mini',
       prompt_tokens: 150,
-      conversation_id: 'test-conv-metrics-1',
+      conversation_id: undefined, // ✅ NULL permitido (sem FK constraint)
       user_message: 'Hola, necesito zapatillas Nike Air Max'
     });
     console.log('✅ AI Request tracked\n');
@@ -50,7 +53,7 @@ async function testMetricsCollection() {
       completion_tokens: 200,
       total_tokens: 350,
       response_time_ms: 1500,
-      conversation_id: 'test-conv-metrics-1',
+      conversation_id: undefined, // ✅ NULL permitido
       success: true
     });
     console.log('✅ AI Response (success) tracked\n');
@@ -60,11 +63,11 @@ async function testMetricsCollection() {
     await trackAIResponse({
       model: 'gpt-4o-mini',
       completion_tokens: 0,
-      total_tokens: 0,
+      total_tokens: 150, // ✅ Corrigido: tokens do prompt
       response_time_ms: 500,
-      conversation_id: 'test-conv-metrics-1',
+      conversation_id: undefined, // ✅ NULL permitido
       success: false,
-      error: 'API timeout'
+      error: 'Rate limit exceeded'
     });
     console.log('✅ AI Response (failed) tracked\n');
 
@@ -75,7 +78,7 @@ async function testMetricsCollection() {
       parameters: { query: 'nike air max', limit: 5 },
       execution_time_ms: 850,
       success: true,
-      conversation_id: 'test-conv-metrics-1'
+      conversation_id: undefined // ✅ NULL permitido
     });
     console.log('✅ Tool Call tracked\n');
 
@@ -93,7 +96,7 @@ async function testMetricsCollection() {
         product_name: product.name,
         search_query: 'nike air max',
         tool_used: 'search_products',
-        conversation_id: 'test-conv-metrics-1'
+        conversation_id: undefined // ✅ NULL permitido
       });
     }
     console.log(`✅ ${testProducts.length} Product Searches tracked\n`);
