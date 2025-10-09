@@ -1,5 +1,41 @@
 import { supabaseAdmin } from '@snkhouse/database';
 
+/**
+ * Conversation data from Supabase with customer relation
+ */
+interface ConversationWithCustomer {
+  customer_id: string;
+  customers: {
+    id: string;
+    name: string | null;
+    email: string;
+  } | null;
+  updated_at: string;
+}
+
+/**
+ * Conversation status data
+ */
+interface ConversationStatus {
+  status: string;
+}
+
+/**
+ * Message data with timestamp
+ */
+interface MessageData {
+  created_at: string;
+}
+
+/**
+ * Message data with role for response time calculation
+ */
+interface MessageWithRole {
+  role: 'user' | 'assistant' | 'system';
+  created_at: string;
+  conversation_id: string;
+}
+
 export interface DashboardMetrics {
   totalConversations: number;
   activeConversations: number;
@@ -28,6 +64,15 @@ export interface DashboardMetrics {
 
 /**
  * Coleta todas as métricas do dashboard em uma única chamada otimizada
+ *
+ * @returns {Promise<DashboardMetrics>} Objeto contendo todas as métricas do dashboard
+ * @throws {Error} Se houver erro ao buscar dados do Supabase
+ *
+ * @example
+ * ```typescript
+ * const metrics = await getDashboardMetrics();
+ * console.log(`Total conversas: ${metrics.totalConversations}`);
+ * ```
  */
 export async function getDashboardMetrics(): Promise<DashboardMetrics> {
   try {
@@ -89,7 +134,7 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
       lastActivity: string;
     }>();
 
-    topCustomersData?.forEach((conv: any) => {
+    topCustomersData?.forEach((conv: ConversationWithCustomer) => {
       if (conv.customer_id && conv.customers) {
         const existing = customerMap.get(conv.customer_id);
         if (existing) {
@@ -119,7 +164,7 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
       .select('status');
 
     const statusMap = new Map<string, number>();
-    statusData?.forEach((conv: any) => {
+    statusData?.forEach((conv: ConversationStatus) => {
       const status = conv.status || 'unknown';
       statusMap.set(status, (statusMap.get(status) || 0) + 1);
     });
@@ -140,7 +185,7 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
       hourMap.set(i, 0);
     }
 
-    recentMessages?.forEach((msg: any) => {
+    recentMessages?.forEach((msg: MessageData) => {
       const hour = new Date(msg.created_at).getHours();
       hourMap.set(hour, (hourMap.get(hour) || 0) + 1);
     });
@@ -162,8 +207,8 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
 
     if (messagesForResponseTime && messagesForResponseTime.length > 1) {
       for (let i = 1; i < messagesForResponseTime.length; i++) {
-        const current = messagesForResponseTime[i];
-        const previous = messagesForResponseTime[i - 1];
+        const current = messagesForResponseTime[i] as MessageWithRole;
+        const previous = messagesForResponseTime[i - 1] as MessageWithRole;
 
         // Se anterior é user e atual é assistant, na mesma conversa
         if (
