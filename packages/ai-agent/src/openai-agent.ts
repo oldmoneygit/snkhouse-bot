@@ -1,6 +1,7 @@
 import OpenAI from 'openai';
 import { ConversationMessage, AgentResponse, AgentConfig } from './types';
-import { SYSTEM_PROMPT } from './prompts';
+import { buildSystemPrompt } from './prompts';
+import { enrichPromptWithFAQs } from './knowledge';
 import { TOOLS_DEFINITIONS } from './tools/definitions';
 import { executeToolCall } from './tools/handlers';
 
@@ -27,8 +28,19 @@ export async function generateWithOpenAI(
   console.log('🔧 [OpenAI] Tools disponíveis:', TOOLS_DEFINITIONS.length);
 
   try {
+    // Build dynamic system prompt from Knowledge Base
+    const baseSystemPrompt = buildSystemPrompt();
+
+    // Enrich prompt with relevant FAQs based on user's last message
+    const lastUserMessage = messages.filter(m => m.role === 'user').slice(-1)[0];
+    const systemPrompt = lastUserMessage
+      ? enrichPromptWithFAQs(lastUserMessage.content, baseSystemPrompt)
+      : baseSystemPrompt;
+
+    console.log('📚 [OpenAI] System prompt enriched with FAQs from Knowledge Base');
+
     let currentMessages = [
-      { role: 'system' as const, content: SYSTEM_PROMPT },
+      { role: 'system' as const, content: systemPrompt },
       ...messages,
     ];
 
