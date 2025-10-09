@@ -580,20 +580,216 @@ jobs:
 
 ## 📈 Roadmap
 
-### Fase Atual: MVP (40% completo)
+### Fase Atual: Chat Agent MVP (90% completo)
 - ✅ SNKH-1: Widget interface
 - ✅ SNKH-4: Supabase setup
 - ✅ SNKH-7: Chat API
-- ✅ SNKH-8: AI Tools (80%)
+- ✅ SNKH-8: AI Tools
 - ✅ SNKH-9: Admin Dashboard
 - ✅ SNKH-14: Analytics Dashboard
+- ✅ SNKH-15: Real-time metrics collection
 
-### Próximos Passos:
-- [ ] SNKH-15: Real-time tracking
-- [ ] SNKH-16: WhatsApp integration
-- [ ] SNKH-17: Auth system
-- [ ] SNKH-18: Email notifications
-- [ ] SNKH-19: Performance optimization
+### Q1 2025 - Completar Chat Agent:
+- [ ] SNKH-16: Knowledge Base (RAG)
+- [ ] SNKH-17: WhatsApp Business Integration
+- [ ] SNKH-18: Voice Messages Support
+- [ ] SNKH-19: Sentiment Analysis
+- [ ] SNKH-20: Handoff para Humano
+
+### Q2 2025 - Multi-Agent Ecosystem:
+- [ ] SNKH-30-39: Designer Agent (DALL-E 3, Midjourney)
+- [ ] SNKH-40-49: Copy Agent (GPT-4, Claude)
+- [ ] SNKH-50-59: Social Media Agent (Meta API, TikTok)
+- [ ] SNKH-60-69: Analytics Agent ML (Prophet, TensorFlow)
+- [ ] SNKH-70-71: Multi-Agent Hub (Orchestration)
+
+**Para detalhes completos, veja:** [ROADMAP_MEDIO_PRAZO.md](./ROADMAP_MEDIO_PRAZO.md)
+
+---
+
+## 🔮 VISÃO FUTURA - MULTI-AGENT ECOSYSTEM
+
+### Arquitetura Futura (Q2 2025)
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│                    MULTI-AGENT HUB                           │
+│                  (Orchestration Layer)                       │
+└─────────────┬────────────────────────────────────────────────┘
+              │
+              ├────────────┬──────────────┬──────────────┬──────
+              ▼            ▼              ▼              ▼
+        ┌──────────┐ ┌──────────┐  ┌──────────┐  ┌──────────┐
+        │   CHAT   │ │ DESIGNER │  │   COPY   │  │  SOCIAL  │
+        │  AGENT   │ │  AGENT   │  │  AGENT   │  │  AGENT   │
+        │  (90%)   │ │   (Q2)   │  │   (Q2)   │  │   (Q2)   │
+        │          │ │          │  │          │  │          │
+        │ GPT-4o-  │ │ DALL-E 3 │  │  GPT-4   │  │ Meta API │
+        │  mini    │ │Midjourney│  │  Claude  │  │  TikTok  │
+        └──────────┘ └──────────┘  └──────────┘  └──────────┘
+              │            │              │              │
+              └────────────┴──────────────┴──────────────┘
+                           │
+                           ▼
+                    ┌──────────┐
+                    │ANALYTICS │
+                    │  AGENT   │
+                    │  (40%)   │
+                    │          │
+                    │ Prophet  │
+                    │TensorFlow│
+                    └──────────┘
+                           │
+                           ▼
+                  ┌─────────────────┐
+                  │   SUPABASE DB   │
+                  │  PostgreSQL +   │
+                  │  Vector Store   │
+                  └─────────────────┘
+```
+
+### 5 Agentes Especializados
+
+#### 1. 💬 Chat Agent (Atendimento) - **90% Completo**
+**Responsabilidades:**
+- Atendimento 24/7 via Widget + WhatsApp
+- Busca e recomendação de produtos
+- Multilingual support (pt-BR, es-AR, en)
+- Knowledge Base (RAG) - SNKH-16
+
+**Stack:** GPT-4o-mini + Function Calling + WooCommerce API
+
+#### 2. 🎨 Designer Agent (Criação Visual) - **Q2 2025**
+**Responsabilidades:**
+- Gerar banners promocionais
+- Criar posts para redes sociais (feed, stories, reels)
+- Design de produtos (mockups)
+- Brand consistency validation
+
+**Stack:** DALL-E 3 + Midjourney + Cloudinary
+
+**Capacidade:** 50-100 imagens/mês | ~$1/imagem
+
+#### 3. ✍️ Copy Agent (Copywriting) - **Q2 2025**
+**Responsabilidades:**
+- Copy para posts e anúncios
+- Descrições de produtos (SEO-optimized)
+- E-mail marketing
+- Multilingual (pt-BR, es-AR, en)
+
+**Stack:** GPT-4 + Claude 3.5 Sonnet + Frameworks (AIDA, PAS, FAB)
+
+**Capacidade:** 200-300 textos/mês | $0.10-0.20/texto
+
+#### 4. 📱 Social Media Agent (Gestão de Redes) - **Q2 2025**
+**Responsabilidades:**
+- Auto-posting (Instagram, Facebook, TikTok)
+- Agendamento de calendário (30+ dias)
+- Auto-resposta a comentários e DMs
+- Monitoramento de menções
+
+**Stack:** Meta Graph API + TikTok API + Custom Scheduler
+
+**Capacidade:** 30-60 posts/mês | Auto-resposta ilimitada
+
+#### 5. 📈 Analytics Agent (Analytics + ML) - **40% Completo → Q2 2025**
+**Responsabilidades:**
+- Dashboard em tempo real (✅ Implementado)
+- Predição de vendas (30/60/90 dias)
+- Customer segmentation (RFM)
+- Recomendações estratégicas
+- Churn prediction
+
+**Stack Atual:** Supabase + Real-time aggregation
+**Stack Futuro:** Prophet + TensorFlow.js + Scikit-learn
+
+### 🎯 Casos de Uso End-to-End
+
+#### Black Friday Campaign (Automático)
+```
+Input: "Criar campanha Black Friday para tênis de corrida"
+
+1. Analytics Agent → Analisa histórico, recomenda top 10 produtos
+2. Copy Agent → Gera copy para Instagram, Email, Meta Ads (30 variações)
+3. Designer Agent → Gera 40 assets (banners, stories, feeds)
+4. Social Media Agent → Agenda 20 posts otimizados (5 dias × 4/dia)
+5. Analytics Agent → Monitora performance, ajusta mid-campaign
+
+Output:
+- 60 assets de conteúdo
+- 20 posts agendados
+- ROI tracking em tempo real
+- Tempo total: 2h (vs 40h manual)
+- Custo: ~$15 APIs (vs R$ 3,000 agência)
+```
+
+#### Lançamento de Produto
+```
+Input: "Novo Nike Air Max - lançamento 15/02"
+
+1. Analytics → Prediz demanda, recomenda preço
+2. Copy → Teaser (D-3) + Lançamento (D0) + Follow-up (D+7)
+3. Designer → Hero image + teasers + posts lançamento
+4. Social → Calendário 10 dias automatizado
+5. Chat → Knowledge base atualizada
+
+Output: 15-20 posts + produto integrado no chat
+```
+
+#### Conteúdo Evergreen (Mensal)
+```
+Input: "Gerar 30 posts para março"
+
+1. Analytics → Analisa posts anteriores, recomenda mix
+2. Copy → 30 captions variadas (produtos, dicas, lifestyle)
+3. Designer → 30 imagens consistentes
+4. Social → Agenda calendário otimizado
+
+Output: 30 posts completos em 3-4h (vs 60h manual)
+```
+
+### 💰 ROI Multi-Agent
+
+**Investimento:**
+- Desenvolvimento: R$ 0 (Claude Code + equipe interna)
+- Infraestrutura: $200-350/mês ($2,400-4,200/ano)
+- **Total anual:** ~R$ 12,000-21,000
+
+**Economia vs Agência:**
+- Campanhas (10/ano): R$ 30,000 economizados
+- Conteúdo mensal: R$ 72,000 economizados
+- Lançamentos (8/ano): R$ 12,000 economizados
+- **Total economia:** R$ 114,000/ano
+
+**ROI:**
+- Retorno líquido: R$ 93,000-102,000/ano
+- **ROI: 443-850%**
+- Payback: 1.5-2 meses
+
+### 📅 Timeline de Implementação
+
+| Período | Agente | Status |
+|---------|--------|--------|
+| **Q1 2025** | Chat Agent (100%) | 🔄 Em andamento |
+| **Q2 2025 (Semana 1-4)** | Designer Agent | 📋 Planejado |
+| **Q2 2025 (Semana 3-6)** | Copy Agent | 📋 Planejado |
+| **Q2 2025 (Semana 5-10)** | Social Media Agent | 📋 Planejado |
+| **Q2 2025 (Semana 1-6)** | Analytics ML | 📋 Planejado |
+| **Q2 2025 (Semana 9-10)** | Multi-Agent Hub | 📋 Planejado |
+
+### 🛠️ Tech Stack Completo
+
+| Camada | Tecnologias |
+|--------|-------------|
+| **Frontend** | Next.js 14, React 18, TailwindCSS |
+| **Backend** | Next.js API Routes, Node.js |
+| **Database** | PostgreSQL (Supabase) + pgvector |
+| **AI Models** | GPT-4o-mini, GPT-4, Claude 3.5, DALL-E 3, Midjourney |
+| **ML** | Prophet, TensorFlow.js, Scikit-learn |
+| **Integrations** | WooCommerce, Meta Graph API, TikTok API |
+| **Storage** | Supabase Storage, Cloudinary |
+| **Monitoring** | Custom Dashboard, Sentry |
+| **DevOps** | Turborepo, pnpm, Git, GitHub Actions |
 
 ---
 

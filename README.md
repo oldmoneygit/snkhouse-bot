@@ -1618,5 +1618,38 @@ gh issue create --title "[SNKH-25] Full Launch 100%" --body "Lançamento complet
 
 ---
 
+## 🗺️ ROADMAP DE MÉDIO PRAZO
+
+### Visão Futura: Multi-Agent Ecosystem (Q1-Q2 2025)
+
+Este projeto está evoluindo de um chatbot de atendimento para um **ecossistema completo de 5 agentes especializados** que automatizarão:
+
+- 🤖 **Chat Agent (90% completo)** - Atendimento ao cliente
+- 🎨 **Designer Agent (Q2 2025)** - Criação visual com DALL-E 3 e Midjourney
+- ✍️ **Copy Agent (Q2 2025)** - Copywriting com GPT-4 e Claude
+- 📱 **Social Media Agent (Q2 2025)** - Gestão de redes sociais (Meta API, TikTok)
+- 📈 **Analytics Agent (40% completo → Q2 2025)** - Analytics avançados + ML
+
+### ROI Esperado
+
+- **Economia anual:** R$ 93,000-102,000
+- **ROI:** 443-850%
+- **Payback:** 1.5-2 meses
+- **Investimento:** $200-350/mês em infraestrutura
+
+### Próximos Passos (Q1 2025)
+
+**SNKH-16 até SNKH-20:** Completar Chat Agent (100%)
+- Knowledge Base (RAG)
+- WhatsApp Business Integration
+- Voice Messages Support
+- Sentiment Analysis
+- Handoff para Humano
+
+**Para detalhes completos:**
+- [ROADMAP_MEDIO_PRAZO.md](docs/ROADMAP_MEDIO_PRAZO.md) - Roadmap detalhado
+- [ARCHITECTURE.md](docs/ARCHITECTURE.md) - Visão futura da arquitetura
+
+---
+
 *Este documento será atualizado conforme o progresso do projeto.*
->>>>>>> 73db47c (feat: Add comprehensive SNKHOUSE bot documentation with automated workflow, cost management, and 22-day MVP roadmap)
