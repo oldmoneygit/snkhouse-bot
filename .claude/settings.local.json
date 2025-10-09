@@ -8,7 +8,10 @@
       "Bash(pnpm:*)",
       "Bash(node:*)",
       "Bash(cat:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(tsx:*)"
     ],
     "deny": [],
     "ask": []

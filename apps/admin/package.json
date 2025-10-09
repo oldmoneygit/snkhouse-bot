@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@snkhouse/analytics": "workspace:*",
     "@snkhouse/database": "workspace:*",
     "date-fns": "^3.0.0",
     "lucide-react": "^0.263.1",

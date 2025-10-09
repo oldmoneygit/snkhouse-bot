@@ -70,6 +70,12 @@ export default async function DashboardPage() {
               >
                 Conversas
               </Link>
+              <Link
+                href="/analytics"
+                className="text-gray-600 hover:text-gray-900"
+              >
+                Analytics
+              </Link>
             </nav>
           </div>
         </div>
