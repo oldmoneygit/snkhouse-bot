@@ -15,6 +15,7 @@ export default function Widget() {
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isTyping, setIsTyping] = useState(false)
+  const [conversationId, setConversationId] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const scrollToBottom = () => {
@@ -48,7 +49,10 @@ export default function Widget() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ message: currentInput }),
+        body: JSON.stringify({
+          message: currentInput,
+          conversationId: conversationId
+        }),
       })
 
       if (!response.ok) {
@@ -57,10 +61,16 @@ export default function Widget() {
 
       const data = await response.json()
 
+      // Salvar conversation ID na primeira mensagem
+      if (data.conversationId && !conversationId) {
+        setConversationId(data.conversationId)
+        console.log('✅ [Widget] Conversation ID salvo:', data.conversationId)
+      }
+
       // Simular delay de digitação
       setTimeout(() => {
         setIsTyping(false)
-        
+
         const assistantMessage: Message = {
           id: (Date.now() + 1).toString(),
           content: data.message,

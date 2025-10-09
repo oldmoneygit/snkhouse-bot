@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh:*)",
+      "Bash(winget install:*)",
+      "Bash(choco:*)",
+      "Bash(powershell.exe:*)",
+      "Bash(pnpm:*)",
+      "Bash(node:*)",
+      "Bash(cat:*)",
+      "Bash(git add:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

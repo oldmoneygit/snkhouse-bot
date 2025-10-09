@@ -2,6 +2,23 @@
 
 Sistema completo de atendimento automatizado com IA para a loja SNKHOUSE, incluindo widget de chat no site e integração com WhatsApp para Argentina.
 
+---
+
+## 📚 DOCUMENTAÇÃO
+
+### 🎯 **Comece por aqui:**
+- 📍 **[START_HERE.md](docs/START_HERE.md)** - Guia de início rápido
+- 🎯 **[COMO_TESTAR_TUDO.md](docs/COMO_TESTAR_TUDO.md)** - Como rodar e testar tudo visualmente
+- ⭐ **[COMO_RODAR.md](docs/COMO_RODAR.md)** - Guia visual passo-a-passo
+- 🔧 **[FIX_PORT_ERROR.md](docs/FIX_PORT_ERROR.md)** - Resolver erros de porta
+
+### 📖 **Guias Técnicos:**
+- 📚 **[DEV_GUIDE.md](docs/DEV_GUIDE.md)** - Guia completo de desenvolvimento
+- 🎨 **[ADMIN_SETUP.md](docs/ADMIN_SETUP.md)** - Setup do Admin Dashboard
+- 📊 **[11-admin-dashboard.md](docs/11-admin-dashboard.md)** - Documentação técnica completa
+
+---
+
 ## 📋 Visão Geral
 
 Este projeto visa criar um ecossistema completo de atendimento automatizado que resolva os problemas de pré-venda e pós-venda da SNKHOUSE, uma loja online de tênis importados focada no mercado argentino.
