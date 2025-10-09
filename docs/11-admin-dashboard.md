@@ -1,68 +1,74 @@
 # SNKH-9: Admin Dashboard
 
-Este documento descreve a implementação do Admin Dashboard básico para gerenciar conversas e visualizar métricas.
+Este documento descreve a implementação do dashboard administrativo básico para gestão de conversas do chat.
 
 ## Estrutura
 
-```
-apps/admin/
-  next.config.js
-  package.json
-  postcss.config.js
-  tailwind.config.js
-  tsconfig.json
-  src/
-    app/
-      globals.css
-      layout.tsx
-      page.tsx
-      conversations/
-        layout.tsx
-        loading.tsx
-        page.tsx
-        [id]/
-          page.tsx
-packages/database/
-  package.json
-  src/index.ts
-```
+- apps/admin
+  - next.config.js
+  - package.json
+  - postcss.config.js
+  - tailwind.config.js
+  - tsconfig.json
+  - src/app
+    - layout.tsx
+    - globals.css
+    - page.tsx (Dashboard)
+    - conversations/
+      - page.tsx (Lista)
+      - [id]/page.tsx (Detalhe)
+
+- packages/database
+  - package.json
+  - src/index.ts (cliente Supabase)
 
 ## Configurações
-- Next.js 14 em `apps/admin`
-- Porta de desenvolvimento padrão 3001 (também adicionado script `dev:3003`)
-- Tailwind CSS configurado com cores SNKHOUSE
-- Tipos via TypeScript integrado
 
-## Integração com Supabase
-- Pacote `@snkhouse/database` criado para exportar o client Supabase
-- Carrega variáveis de ambiente de `.env.local` quando disponível
-- Se `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY` não estiverem definidos, o dashboard continua renderizando com valores zerados
+- Porta do Admin: 3001 (dev)
+- Tailwind CSS configurado em `tailwind.config.js` e `globals.css`
+- Tipos/TS via `tsconfig.json` (herda do root)
+- Transpile package `@snkhouse/database`
 
-Variáveis necessárias:
+## Variáveis de ambiente
+
+Defina no `.env.local` (na raiz do monorepo ou dentro de `apps/admin`):
+
 ```
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...
 ```
+
+Sem estas variáveis, o dashboard funciona em modo "vazio" (contadores 0 e listas vazias), permitindo build e visualização do layout.
 
 ## Páginas
-- `/` Dashboard com estatísticas e últimas conversas
-- `/conversations` Lista de conversas com status/canal
-- `/conversations/[id]` Detalhe da conversa com mensagens
 
-Todas as rotas usam `export const dynamic = 'force-dynamic'` para renderização no servidor e evitam cache.
+- `/` Dashboard com métricas:
+  - Total de conversas
+  - Conversas ativas
+  - Total de mensagens
+  - Lista de conversas recentes
+
+- `/conversations` Lista de conversas (ordenadas por `updated_at`)
+
+- `/conversations/[id]` Detalhes da conversa com mensagens e dados do cliente
+
+Todas as páginas marcam `export const dynamic = 'force-dynamic'` para SSR e evitam problemas de cache no app router.
 
 ## Scripts
-Dentro de `apps/admin`:
-- `pnpm dev` (porta 3001)
-- `pnpm dev:3003` (porta 3003)
-- `pnpm build`
 
-## Teste rápido
-1. Instale dependências na raiz: `pnpm install`
-2. Configure `.env.local` na raiz ou em `apps/admin` com as variáveis do Supabase
-3. Rode: `pnpm --filter @snkhouse/admin dev`
-4. Acesse `http://localhost:3001`
+Na raiz:
+
+```bash
+pnpm install
+pnpm --filter @snkhouse/admin dev
+# ou
+pnpm --filter @snkhouse/admin build && pnpm --filter @snkhouse/admin start
+```
+
+Para usar outra porta em dev, você pode ajustar o script `dev` ou executar `next dev --port 3003`.
 
 ## Observações
-- Caso as variáveis do Supabase não estejam setadas, as consultas retornam dados vazios e o dashboard ainda carrega.
-- O pacote `@snkhouse/database` cria o client de forma preguiçosa para evitar erros no build quando as envs não existem.
+
+- O pacote `@snkhouse/database` cria o cliente Supabase apenas quando as variáveis estão presentes, evitando erros em build.
+- A UI usa as cores SNKHOUSE (amarelo/preto) e design limpo com Tailwind.
+- Quando houver dados no Supabase (tabelas `customers`, `conversations`, `messages`), os cards e listas serão preenchidos automaticamente.
