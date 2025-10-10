@@ -4,10 +4,23 @@ import {
   WooCommerceProduct,
   WooCommerceOrder,
   WooCommerceCategory,
+  WooCommerceCustomer,
   ProductSearchParams,
   OrderSearchParams,
 } from './types';
 import { wooCache } from './cache';
+
+/**
+ * Sanitiza email para logs (LGPD compliance)
+ */
+function sanitizeEmail(email: string): string {
+  if (!email || !email.includes('@')) return '***@***';
+  const [user, domain] = email.split('@');
+  if (!user || !domain) return '***@***';
+  const domainParts = domain.split('.');
+  const tld = domainParts.length > 0 ? domainParts[domainParts.length - 1] : '***';
+  return `${user[0]}***@***${tld}`;
+}
 
 export class WooCommerceClient {
   private client: AxiosInstance;
@@ -163,7 +176,7 @@ export class WooCommerceClient {
   }
 
   async getOrdersByCustomerEmail(email: string): Promise<WooCommerceOrder[]> {
-    console.log(`🔍 [WooCommerce] Buscando pedidos do cliente: ${email}`);
+    console.log(`🔍 [WooCommerce] Buscando pedidos do cliente: ${sanitizeEmail(email)}`);
 
     // WooCommerce não suporta busca direta por email, então buscamos todos e filtramos
     const allOrders = await this.getOrders({ per_page: 100 });
@@ -172,7 +185,7 @@ export class WooCommerceClient {
       order => order.billing.email.toLowerCase() === email.toLowerCase()
     );
 
-    console.log(`✅ [WooCommerce] ${customerOrders.length} pedidos encontrados para ${email}`);
+    console.log(`✅ [WooCommerce] ${customerOrders.length} pedidos encontrados para ${sanitizeEmail(email)}`);
     return customerOrders;
   }
 
@@ -202,6 +215,26 @@ export class WooCommerceClient {
 
     } catch (error: any) {
       console.error(`❌ [WooCommerce] Erro ao listar categorias:`, error.message);
+      throw error;
+    }
+  }
+  async findCustomerByEmail(email: string): Promise<WooCommerceCustomer | null> {
+    console.log(`[WooCommerce] Buscando cliente por email: ${sanitizeEmail(email)}`);
+
+    try {
+      const response = await this.client.get<WooCommerceCustomer[]>('/customers', {
+        params: { email, per_page: 1 },
+      });
+
+      const customer = response.data?.[0] ?? null;
+      if (customer) {
+        console.log(`[WooCommerce] Cliente encontrado: ${customer.id}`);
+      } else {
+        console.log('[WooCommerce] Nenhum cliente encontrado para o email informado');
+      }
+      return customer;
+    } catch (error: any) {
+      console.error('[WooCommerce] Erro ao buscar cliente por email:', error.message);
       throw error;
     }
   }
@@ -247,3 +280,4 @@ export function getWooCommerceClient(): WooCommerceClient {
 
   return wooCommerceClient;
 }
+

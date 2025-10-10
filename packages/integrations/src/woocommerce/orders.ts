@@ -56,6 +56,24 @@ function sanitizeCustomerId(customerId: number): string {
 }
 
 /**
+ * Sanitiza email para logs (LGPD)
+ *
+ * Exemplo: "usuario@gmail.com" → "u***@***com"
+ * Exemplo: "test@example.com.br" → "t***@***br"
+ */
+function sanitizeEmail(email: string): string {
+  if (!email || !email.includes('@')) return '***@***';
+
+  const [user, domain] = email.split('@');
+  if (!user || !domain) return '***@***';
+
+  const domainParts = domain.split('.');
+  const tld = domainParts.length > 0 ? domainParts[domainParts.length - 1] : '***';
+
+  return `${user[0]}***@***${tld}`;
+}
+
+/**
  * Valida se pedido pertence ao cliente (SEGURANÇA CRÍTICA)
  *
  * @param order - Pedido a ser validado
@@ -84,8 +102,8 @@ function validateOrderOwnership(order: WooOrder, customerId: number | string): v
     if (orderEmail !== providedEmail) {
       console.error('🚨 [Orders] Unauthorized access attempt (email validation)', {
         order_id: order.id,
-        expected_email: orderEmail?.split('@')[0] + '***',
-        provided_email: providedEmail.split('@')[0] + '***'
+        expected_email: orderEmail ? sanitizeEmail(orderEmail) : 'null',
+        provided_email: sanitizeEmail(providedEmail)
       });
       throw new Error('Unauthorized: Este pedido não pertence a este email');
     }
@@ -243,7 +261,7 @@ export async function searchCustomerOrders(
 export async function getOrderDetails(orderId: number, customerId: number | string): Promise<OrderDetailsData> {
   console.log('📋 [Orders] Buscando detalhes completos do pedido', {
     order_id: orderId,
-    customer_id: typeof customerId === 'number' ? sanitizeCustomerId(customerId) : customerId.split('@')[0] + '***'
+    customer_id: typeof customerId === 'number' ? sanitizeCustomerId(customerId) : sanitizeEmail(customerId)
   });
 
   const order = await fetchOrderById(orderId, customerId);
@@ -299,7 +317,7 @@ export async function trackShipment(orderId: number, customerId: number | string
 }> {
   console.log('📮 [Orders] Buscando rastreamento', {
     order_id: orderId,
-    customer_id: typeof customerId === 'number' ? sanitizeCustomerId(customerId) : customerId.split('@')[0] + '***'
+    customer_id: typeof customerId === 'number' ? sanitizeCustomerId(customerId) : sanitizeEmail(customerId)
   });
 
   const order = await fetchOrderById(orderId, customerId);

@@ -11,6 +11,19 @@ config({ path: path.resolve(process.cwd(), '.env.local') });
 const WIDGET_CHANNEL = 'widget';
 const EMAIL_REGEX = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/;
 
+/**
+ * Sanitiza email para logs (LGPD compliance)
+ * Exemplo: "usuario@gmail.com" → "u***@***com"
+ */
+function sanitizeEmail(email: string): string {
+  if (!email || !email.includes('@')) return '***@***';
+  const [user, domain] = email.split('@');
+  if (!user || !domain) return '***@***';
+  const domainParts = domain.split('.');
+  const tld = domainParts.length > 0 ? domainParts[domainParts.length - 1] : '***';
+  return `${user[0]}***@***${tld}`;
+}
+
 interface IncomingMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;
@@ -111,17 +124,17 @@ export async function POST(request: NextRequest) {
       if (effectiveEmail !== originalEmail) {
         emailWasUpdated = true;
         console.log('🔍 [Widget API] Email detectado na mensagem:', {
-          novo: `${effectiveEmail.split('@')[0]}***@${effectiveEmail.split('@')[1]}`
+          novo: sanitizeEmail(effectiveEmail)
         });
       }
     } else if (existingConversation?.effective_email) {
       // Usar email salvo da conversa
       effectiveEmail = existingConversation.effective_email;
-      console.log('♻️ [Widget API] Reutilizando email salvo da conversa:', `${effectiveEmail.split('@')[0]}***@${effectiveEmail.split('@')[1]}`);
+      console.log('♻️ [Widget API] Reutilizando email salvo da conversa:', sanitizeEmail(effectiveEmail));
     } else {
       // Fallback: usar email do onboarding
       effectiveEmail = originalEmail;
-      console.log('📧 [Widget API] Usando email do onboarding:', `${effectiveEmail.split('@')[0]}***@${effectiveEmail.split('@')[1]}`);
+      console.log('📧 [Widget API] Usando email do onboarding:', sanitizeEmail(effectiveEmail));
     }
 
     // 2) Mapear customer_id do WooCommerce
@@ -133,7 +146,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!wooCustomerId || emailWasUpdated) {
-      console.log('🔍 [Widget API] Buscando woocommerce_id no WooCommerce para:', effectiveEmail.split('@')[0] + '***');
+      console.log('🔍 [Widget API] Buscando woocommerce_id no WooCommerce para:', sanitizeEmail(effectiveEmail));
 
       try {
         const wooCustomer = await findCustomerByEmail(effectiveEmail);
@@ -158,7 +171,7 @@ export async function POST(request: NextRequest) {
             }
           }
         } else {
-          console.log('⚠️ [Widget API] Cliente não encontrado no WooCommerce para email:', effectiveEmail.split('@')[0] + '***');
+          console.log('⚠️ [Widget API] Cliente não encontrado no WooCommerce para email:', sanitizeEmail(effectiveEmail));
         }
       } catch (integrationError) {
         console.error('❌ [Widget API] Erro ao consultar WooCommerce:', integrationError);
@@ -183,9 +196,9 @@ export async function POST(request: NextRequest) {
           .eq('id', activeConversationId);
 
         console.log('🔄 [Widget API] Email da conversa atualizado de',
-          savedEmail ? `${savedEmail.split('@')[0]}***` : 'null',
+          savedEmail ? sanitizeEmail(savedEmail) : 'null',
           'para',
-          `${effectiveEmail.split('@')[0]}***`
+          sanitizeEmail(effectiveEmail)
         );
       }
     } else {
@@ -207,7 +220,7 @@ export async function POST(request: NextRequest) {
       }
 
       activeConversationId = newConversation.id;
-      console.log('💬 [Widget API] Nova conversa criada com email:', `${effectiveEmail.split('@')[0]}***`);
+      console.log('💬 [Widget API] Nova conversa criada com email:', sanitizeEmail(effectiveEmail));
     }
 
     // 4) Construir hist�rico para a IA
@@ -254,7 +267,7 @@ export async function POST(request: NextRequest) {
     console.log('🤖 [Widget API] Chamando AI com contexto:', {
       conversation_id: activeConversationId,
       customer_id: wooCustomerId,
-      email_sanitized: effectiveEmail.split('@')[0] + '***',
+      email_sanitized: sanitizeEmail(effectiveEmail),
       has_woo_id: !!wooCustomerId,
       customer_supabase_id: customerRecord.id
     });

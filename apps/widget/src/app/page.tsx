@@ -9,6 +9,18 @@ interface Message {
   timestamp: Date
 }
 
+/**
+ * Sanitiza email para logs (LGPD compliance)
+ */
+function sanitizeEmail(email: string): string {
+  if (!email || !email.includes('@')) return '***@***';
+  const [user, domain] = email.split('@');
+  if (!user || !domain) return '***@***';
+  const domainParts = domain.split('.');
+  const tld = domainParts.length > 0 ? domainParts[domainParts.length - 1] : '***';
+  return `${user[0]}***@***${tld}`;
+}
+
 // Función para convertir markdown simple a HTML
 function formatMarkdown(text: string): string {
   return text
@@ -101,8 +113,8 @@ export default function Widget() {
       // Atualizar email se foi detectado um novo na conversa
       if (data.emailUpdated && data.newEmail) {
         console.log('🔄 [Widget] Email actualizado dinámicamente:', {
-          anterior: customerEmail?.split('@')[0] + '***',
-          nuevo: data.newEmail.split('@')[0] + '***'
+          anterior: customerEmail ? sanitizeEmail(customerEmail) : 'null',
+          nuevo: sanitizeEmail(data.newEmail)
         })
         localStorage.setItem('snkhouse_customer_email', data.newEmail)
         setCustomerEmail(data.newEmail)

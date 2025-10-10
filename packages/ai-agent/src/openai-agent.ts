@@ -5,6 +5,18 @@ import { enrichPromptWithFAQs } from './knowledge';
 import { TOOLS_DEFINITIONS } from './tools/definitions';
 import { executeToolCall } from './tools/handlers';
 
+/**
+ * Sanitiza email para logs (LGPD compliance)
+ */
+function sanitizeEmail(email: string): string {
+  if (!email || !email.includes('@')) return '***@***';
+  const [user, domain] = email.split('@');
+  if (!user || !domain) return '***@***';
+  const domainParts = domain.split('.');
+  const tld = domainParts.length > 0 ? domainParts[domainParts.length - 1] : '***';
+  return `${user[0]}***@***${tld}`;
+}
+
 function getOpenAIClient() {
   return new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
@@ -113,17 +125,21 @@ export async function generateWithOpenAI(
           } else if (!toolArgs.customer_id && runtimeContext.customerEmail) {
             // Não tem customer_id mas tem email, usar email como fallback
             toolArgs.customer_id = runtimeContext.customerEmail;
-            console.log(`[OpenAI] Injetado customerEmail como fallback para tool ${toolName}: ${runtimeContext.customerEmail.split('@')[0]}***`);
+            console.log(`[OpenAI] Injetado customerEmail como fallback para tool ${toolName}: ${sanitizeEmail(runtimeContext.customerEmail)}`);
           } else if (!toolArgs.customer_id) {
             console.log('[OpenAI] Tool de pedidos sem customer_id e sem email no contexto');
           }
         }
 
+        // Injetar conversation_id em TODAS as tools se disponível
         if (runtimeContext.conversationId && !toolArgs.conversation_id) {
           toolArgs.conversation_id = runtimeContext.conversationId;
         }
 
-        console.log(`⚙️  [OpenAI] Executando tool: ${toolName}`);
+        console.log(`⚙️  [OpenAI] Executando tool: ${toolName}`, {
+          has_customer_id: !!toolArgs.customer_id,
+          has_conversation_id: !!toolArgs.conversation_id
+        });
 
         try {
           const toolResult = await executeToolCall(toolName, toolArgs);
