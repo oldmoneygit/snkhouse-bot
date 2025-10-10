@@ -1,4 +1,5 @@
-import { processMessage } from '@snkhouse/ai-agent';
+import { generateResponseWithFallback } from '@snkhouse/ai-agent';
+import type { ConversationMessage } from '@snkhouse/ai-agent';
 import { EvolutionAPIClient } from '@snkhouse/integrations';
 import {
   findOrCreateCustomer,
@@ -77,41 +78,43 @@ export async function processEvolutionMessage(message: any): Promise<void> {
     // 6. Histórico
     const history = await getConversationHistory(conversation.id);
 
-    // 7. Contexto para AI
-    const context = {
-      conversation_id: conversation.id,
-      customer_id: customer.id,
-      customer_email: customer.email || undefined,
-      woocommerce_customer_id: customer.woocommerce_customer_id || undefined,
-      channel: 'whatsapp' as const,
-      phone,
-    };
-
-    // 8. AI Agent (REUTILIZA TUDO!)
-    console.log('[Evolution] → AI Agent...');
-
-    const response = await processMessage({
-      message: messageText,
-      conversationHistory: history.map((msg) => ({
-        role: msg.role,
+    // 7. Preparar mensagens para AI Agent
+    const aiMessages: ConversationMessage[] = [
+      ...history.map((msg) => ({
+        role: msg.role as 'user' | 'assistant',
         content: msg.content,
       })),
-      context,
-    });
+      {
+        role: 'user' as const,
+        content: messageText,
+      },
+    ];
+
+    // 8. Contexto para AI
+    const context = {
+      conversationId: conversation.id,
+      customerId: customer.woocommerce_customer_id || undefined,
+      customerEmail: customer.email || undefined,
+    };
+
+    // 9. AI Agent (REUTILIZA TUDO!)
+    console.log('[Evolution] → AI Agent...');
+
+    const response = await generateResponseWithFallback(aiMessages, context);
 
     console.log('[Evolution] ← AI response');
 
-    // 9. Enviar via Evolution
+    // 10. Enviar via Evolution
     await evolutionClient.sendTextMessage({
       number: phone,
-      text: response.message,
+      text: response.content,
     });
 
-    // 10. Salvar resposta bot
+    // 11. Salvar resposta bot
     await saveMessage({
       conversationId: conversation.id,
       role: 'assistant',
-      content: response.message,
+      content: response.content,
       whatsappStatus: 'sent',
     });
 
