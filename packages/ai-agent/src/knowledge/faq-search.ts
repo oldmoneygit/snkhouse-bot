@@ -14,7 +14,7 @@ import { SNKHOUSE_KNOWLEDGE } from './snkhouse-info';
 /**
  * Resultado de busca de FAQ
  */
-interface FAQResult {
+export interface FAQResult {
   pregunta: string;
   respuesta: string;
   categoria: string;
