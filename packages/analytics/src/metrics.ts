@@ -10,7 +10,7 @@ interface ConversationWithCustomer {
     id: string;
     name: string | null;
     email: string;
-  } | null;
+  }[] | null;
   updated_at: string;
 }
 
@@ -146,7 +146,8 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
     }>();
 
     topCustomersData?.forEach((conv: ConversationWithCustomer) => {
-      if (conv.customer_id && conv.customers) {
+      if (conv.customer_id && conv.customers && conv.customers[0]) {
+        const customer = conv.customers[0];
         const existing = customerMap.get(conv.customer_id);
         if (existing) {
           existing.conversationCount++;
@@ -155,9 +156,9 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
           }
         } else {
           customerMap.set(conv.customer_id, {
-            id: conv.customers.id,
-            name: conv.customers.name || 'Cliente sem nome',
-            email: conv.customers.email,
+            id: customer.id,
+            name: customer.name || 'Cliente sem nome',
+            email: customer.email,
             conversationCount: 1,
             lastActivity: conv.updated_at,
           });
