@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyWebhookSignature } from '@/lib/verify-signature';
+import { processIncomingWhatsAppMessage } from '@/lib/message-processor';
 import type { WebhookPayload } from '@/lib/types';
 
 const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN!;
@@ -111,19 +112,7 @@ async function processIncomingMessage(
   message: any,
   value: any
 ): Promise<void> {
-  console.log('[Webhook] Processing incoming message:', {
-    id: message.id,
-    from: message.from.slice(0, 4) + '***', // Sanitizar
-    type: message.type,
-    timestamp: message.timestamp,
-  });
-
-  // TODO: Implementar processamento real na Fase 4
-  // Por enquanto apenas logar
-
-  if (message.type === 'text') {
-    console.log('[Webhook] Text message:', message.text.body.substring(0, 50));
-  }
+  await processIncomingWhatsAppMessage(message, value);
 }
 
 /**
