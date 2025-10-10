@@ -221,6 +221,7 @@ export interface ProductSearchParams {
   min_price?: string;
   max_price?: string;
   stock_status?: 'instock' | 'outofstock' | 'onbackorder';
+  status?: 'draft' | 'pending' | 'private' | 'publish';
   per_page?: number;
   page?: number;
   orderby?: 'date' | 'id' | 'title' | 'slug' | 'price' | 'popularity' | 'rating';
