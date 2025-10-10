@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import { ConversationMessage, AgentResponse, AgentConfig } from './types';
+import { ConversationMessage, AgentResponse, AgentConfig, AgentContext } from './types';
 import { buildSystemPrompt } from './prompts';
 import { enrichPromptWithFAQs } from './knowledge';
 import { TOOLS_DEFINITIONS } from './tools/definitions';
@@ -19,9 +19,15 @@ const DEFAULT_CONFIG: AgentConfig = {
 
 export async function generateWithOpenAI(
   messages: ConversationMessage[],
-  config: Partial<AgentConfig> = {}
+  config: Partial<AgentConfig> = {},
+  context: AgentContext = {}
 ): Promise<AgentResponse> {
   const finalConfig = { ...DEFAULT_CONFIG, ...config };
+  const runtimeContext: AgentContext = {
+    conversationId: context.conversationId,
+    customerId: context.customerId ?? null,
+    customerEmail: context.customerEmail ?? null,
+  };
 
   console.log('🤖 [OpenAI] Iniciando geração com tools habilitadas...');
   console.log('📊 [OpenAI] Mensagens no histórico:', messages.length);
@@ -29,7 +35,9 @@ export async function generateWithOpenAI(
 
   try {
     // Build dynamic system prompt from Knowledge Base
-    const baseSystemPrompt = buildSystemPrompt();
+    const baseSystemPrompt = buildSystemPrompt({
+      hasOrdersAccess: Boolean(runtimeContext.customerId),
+    });
 
     // Enrich prompt with relevant FAQs based on user's last message
     const lastUserMessage = messages.filter(m => m.role === 'user').slice(-1)[0];
@@ -37,8 +45,11 @@ export async function generateWithOpenAI(
       ? enrichPromptWithFAQs(lastUserMessage.content, baseSystemPrompt)
       : baseSystemPrompt;
 
-    console.log('📚 [OpenAI] System prompt enriched with FAQs from Knowledge Base');
+    console.log('[OpenAI] System prompt enriched with FAQs from Knowledge Base');
 
+    if (!runtimeContext.customerId) {
+      console.log('[OpenAI] Tools de pedidos desabilitadas (sem customer_id no contexto)');
+    }
     let currentMessages = [
       { role: 'system' as const, content: systemPrompt },
       ...messages,
@@ -93,8 +104,27 @@ export async function generateWithOpenAI(
         const toolName = toolCall.function.name;
         const toolArgs = JSON.parse(toolCall.function.arguments);
 
+        const ORDERS_TOOLS = ['get_order_status', 'search_customer_orders', 'get_order_details', 'track_shipment'];
+        if (ORDERS_TOOLS.includes(toolName)) {
+          if (!toolArgs.customer_id && runtimeContext.customerId) {
+            // Tem customer_id numérico, usar
+            toolArgs.customer_id = runtimeContext.customerId;
+            console.log(`[OpenAI] Injetado customer_id=${runtimeContext.customerId} para tool ${toolName}`);
+          } else if (!toolArgs.customer_id && runtimeContext.customerEmail) {
+            // Não tem customer_id mas tem email, usar email como fallback
+            toolArgs.customer_id = runtimeContext.customerEmail;
+            console.log(`[OpenAI] Injetado customerEmail como fallback para tool ${toolName}: ${runtimeContext.customerEmail.split('@')[0]}***`);
+          } else if (!toolArgs.customer_id) {
+            console.log('[OpenAI] Tool de pedidos sem customer_id e sem email no contexto');
+          }
+        }
+
+        if (runtimeContext.conversationId && !toolArgs.conversation_id) {
+          toolArgs.conversation_id = runtimeContext.conversationId;
+        }
+
         console.log(`⚙️  [OpenAI] Executando tool: ${toolName}`);
-        
+
         try {
           const toolResult = await executeToolCall(toolName, toolArgs);
           
@@ -132,3 +162,4 @@ export async function generateWithOpenAI(
     throw new Error(`OpenAI Error: ${error.message}`);
   }
 }
+

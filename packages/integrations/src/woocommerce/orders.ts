@@ -58,25 +58,57 @@ function sanitizeCustomerId(customerId: number): string {
 /**
  * Valida se pedido pertence ao cliente (SEGURANÇA CRÍTICA)
  *
- * @throws Error se customer_id não corresponde ao dono do pedido
+ * @param order - Pedido a ser validado
+ * @param customerId - ID numérico do cliente OU email
+ * @throws Error se não puder validar ownership
  */
-function validateOrderOwnership(order: WooOrder, customerId: number): void {
-  if (order.customer_id !== customerId) {
-    console.error('🚨 [Orders] Unauthorized access attempt', {
-      order_id: order.id,
-      expected_customer: sanitizeCustomerId(customerId),
-      actual_customer: sanitizeCustomerId(order.customer_id)
-    });
-    throw new Error('Unauthorized: Este pedido não pertence a este cliente');
+function validateOrderOwnership(order: WooOrder, customerId: number | string): void {
+  // Se customerId é um número válido (> 0), validar numericamente
+  if (typeof customerId === 'number' && customerId > 0) {
+    if (order.customer_id !== customerId) {
+      console.error('🚨 [Orders] Unauthorized access attempt', {
+        order_id: order.id,
+        expected_customer: sanitizeCustomerId(customerId),
+        actual_customer: sanitizeCustomerId(order.customer_id)
+      });
+      throw new Error('Unauthorized: Este pedido não pertence a este cliente');
+    }
+    return;
   }
+
+  // Se customerId é string (email), validar por billing email
+  if (typeof customerId === 'string' && customerId.includes('@')) {
+    const orderEmail = order.billing?.email?.toLowerCase();
+    const providedEmail = customerId.toLowerCase();
+
+    if (orderEmail !== providedEmail) {
+      console.error('🚨 [Orders] Unauthorized access attempt (email validation)', {
+        order_id: order.id,
+        expected_email: orderEmail?.split('@')[0] + '***',
+        provided_email: providedEmail.split('@')[0] + '***'
+      });
+      throw new Error('Unauthorized: Este pedido não pertence a este email');
+    }
+    return;
+  }
+
+  // Se chegou aqui, não conseguiu validar
+  console.error('❌ [Orders] Não foi possível validar ownership', {
+    order_id: order.id,
+    customer_id_type: typeof customerId,
+    customer_id_value: customerId
+  });
+  throw new Error('Não foi possível validar acesso ao pedido');
 }
 
 /**
  * Busca pedido por ID do WooCommerce
  *
+ * @param orderId - ID do pedido
+ * @param customerId - ID numérico do cliente OU email para validação
  * @throws Error se pedido não encontrado ou não pertence ao cliente
  */
-async function fetchOrderById(orderId: number, customerId: number): Promise<WooOrder> {
+async function fetchOrderById(orderId: number, customerId: number | string): Promise<WooOrder> {
   const cacheKey = `order_${orderId}`;
   const cached = ordersCache.get(cacheKey);
 
@@ -208,10 +240,10 @@ export async function searchCustomerOrders(
  * @param customerId - ID do cliente (para validação de segurança)
  * @returns Detalhes completos do pedido
  */
-export async function getOrderDetails(orderId: number, customerId: number): Promise<OrderDetailsData> {
+export async function getOrderDetails(orderId: number, customerId: number | string): Promise<OrderDetailsData> {
   console.log('📋 [Orders] Buscando detalhes completos do pedido', {
     order_id: orderId,
-    customer_id: sanitizeCustomerId(customerId)
+    customer_id: typeof customerId === 'number' ? sanitizeCustomerId(customerId) : customerId.split('@')[0] + '***'
   });
 
   const order = await fetchOrderById(orderId, customerId);
@@ -258,7 +290,7 @@ export async function getOrderDetails(orderId: number, customerId: number): Prom
  * @param customerId - ID do cliente (para validação de segurança)
  * @returns Informações de rastreamento
  */
-export async function trackShipment(orderId: number, customerId: number): Promise<{
+export async function trackShipment(orderId: number, customerId: number | string): Promise<{
   order_id: number;
   tracking_code?: string;
   carrier?: string;
@@ -267,7 +299,7 @@ export async function trackShipment(orderId: number, customerId: number): Promis
 }> {
   console.log('📮 [Orders] Buscando rastreamento', {
     order_id: orderId,
-    customer_id: sanitizeCustomerId(customerId)
+    customer_id: typeof customerId === 'number' ? sanitizeCustomerId(customerId) : customerId.split('@')[0] + '***'
   });
 
   const order = await fetchOrderById(orderId, customerId);

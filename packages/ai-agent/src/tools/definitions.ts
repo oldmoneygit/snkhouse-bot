@@ -146,8 +146,8 @@ export const TOOLS_DEFINITIONS = [
             description: 'ID numérico del pedido',
           },
           customer_id: {
-            type: 'number',
-            description: 'ID del cliente (para validación de seguridad)',
+            type: ['number', 'string'],
+            description: 'ID numérico del cliente OU email del cliente (para validación de seguridad)',
           },
         },
         required: ['order_id', 'customer_id'],
@@ -167,8 +167,8 @@ export const TOOLS_DEFINITIONS = [
             description: 'ID numérico del pedido',
           },
           customer_id: {
-            type: 'number',
-            description: 'ID del cliente (para validación de seguridad)',
+            type: ['number', 'string'],
+            description: 'ID numérico del cliente OU email del cliente (para validación de seguridad)',
           },
         },
         required: ['order_id', 'customer_id'],

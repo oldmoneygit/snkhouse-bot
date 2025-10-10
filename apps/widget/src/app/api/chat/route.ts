@@ -98,23 +98,37 @@ export async function POST(request: NextRequest) {
     // Se email foi atualizado, forçar nova busca mesmo se já existe woocommerce_id
     let wooCustomerId: number | null = customerRecord.woocommerce_id ?? null;
 
+    if (wooCustomerId) {
+      console.log('♻️ [Widget API] Reutilizando woocommerce_id do cache:', wooCustomerId);
+    }
+
     if (!wooCustomerId || emailWasUpdated) {
+      console.log('🔍 [Widget API] Buscando woocommerce_id no WooCommerce para:', effectiveEmail.split('@')[0] + '***');
+
       try {
         const wooCustomer = await findCustomerByEmail(effectiveEmail);
         if (wooCustomer) {
           wooCustomerId = wooCustomer.id;
-          await supabaseAdmin
+
+          const { error: updateError } = await supabaseAdmin
             .from('customers')
-            .update({ woocommerce_id: wooCustomerId })
+            .update({
+              woocommerce_id: wooCustomerId,
+              updated_at: new Date().toISOString()
+            })
             .eq('id', customerRecord.id);
 
-          if (emailWasUpdated) {
-            console.log('✅ [Widget API] WooCommerce customer_id atualizado após mudança de email:', wooCustomerId);
+          if (updateError) {
+            console.error('❌ [Widget API] Erro ao salvar woocommerce_id no Supabase:', updateError);
           } else {
-            console.log('✅ [Widget API] WooCommerce customer_id encontrado:', wooCustomerId);
+            if (emailWasUpdated) {
+              console.log('✅ [Widget API] WooCommerce customer_id atualizado após mudança de email:', wooCustomerId);
+            } else {
+              console.log('✅ [Widget API] WooCommerce customer_id encontrado e salvo:', wooCustomerId);
+            }
           }
         } else {
-          console.log('⚠️ [Widget API] Cliente sem pedidos registrados no WooCommerce');
+          console.log('⚠️ [Widget API] Cliente não encontrado no WooCommerce para email:', effectiveEmail.split('@')[0] + '***');
         }
       } catch (integrationError) {
         console.error('❌ [Widget API] Erro ao consultar WooCommerce:', integrationError);
@@ -213,6 +227,15 @@ export async function POST(request: NextRequest) {
       prompt_tokens: aiMessages.reduce((sum, msg) => sum + Math.ceil(msg.content.length / 4), 0),
       conversation_id: activeConversationId,
       user_message: lastUserMessage,
+    });
+
+    // Log context being passed to AI
+    console.log('🤖 [Widget API] Chamando AI com contexto:', {
+      conversation_id: activeConversationId,
+      customer_id: wooCustomerId,
+      email_sanitized: effectiveEmail.split('@')[0] + '***',
+      has_woo_id: !!wooCustomerId,
+      customer_supabase_id: customerRecord.id
     });
 
     const response = await generateResponseWithFallback(aiMessages, {
