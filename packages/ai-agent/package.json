@@ -9,6 +9,7 @@
     "test:tools": "tsx src/test-with-tools.ts"
   },
   "dependencies": {
+    "@snkhouse/analytics": "workspace:*",
     "@snkhouse/integrations": "workspace:*",
     "openai": "^4.67.3",
     "@anthropic-ai/sdk": "^0.65.0",

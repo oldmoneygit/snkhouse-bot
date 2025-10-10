@@ -28,3 +28,10 @@ export type {
   WooOrderLineItem,
   WooOrderMetaData
 } from './types-orders';
+
+import { getWooCommerceClient } from './client';
+
+export async function findCustomerByEmail(email: string) {
+  const client = getWooCommerceClient();
+  return client.findCustomerByEmail(email);
+}
