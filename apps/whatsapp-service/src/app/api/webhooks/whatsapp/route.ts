@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
 
     // IMPORTANTE: Em produção, SEMPRE validar signature
     // Por enquanto vamos apenas logar se falhar (para facilitar testes)
-    const isValid = verifyWebhookSignature(rawBody, signature, APP_SECRET);
+    const isValid = verifyWebhookSignature(rawBody, signature || undefined, APP_SECRET);
     if (!isValid) {
       console.warn('[Webhook] ⚠️ Invalid signature - processing anyway for testing');
       // return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });

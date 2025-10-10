@@ -1,6 +1,5 @@
 import { generateResponseWithFallback } from '@snkhouse/ai-agent';
 import { WhatsAppClient } from '@snkhouse/integrations';
-import { trackEvent } from '@snkhouse/analytics';
 import type { Message, WebhookValue } from './types';
 import {
   findOrCreateCustomer,
@@ -121,16 +120,17 @@ export async function processIncomingWhatsAppMessage(
       whatsappStatus: 'sent',
     });
 
-    // 13. Track analytics
-    await trackEvent({
-      event_type: 'message_sent',
-      conversation_id: conversation.id,
-      metadata: {
-        channel: 'whatsapp',
-        message_length: response.message.length,
-        has_tools: !!response.toolResults && response.toolResults.length > 0,
-      },
-    });
+    // 13. Track analytics (temporariamente desabilitado - trackEvent não disponível)
+    // TODO: Implementar tracking quando analytics estiver disponível
+    // await trackEvent({
+    //   event_type: 'message_sent',
+    //   conversation_id: conversation.id,
+    //   metadata: {
+    //     channel: 'whatsapp',
+    //     message_length: response.message.length,
+    //     has_tools: !!response.toolResults && response.toolResults.length > 0,
+    //   },
+    // });
 
     console.log('[MessageProcessor] ✅ Message processed successfully');
 
