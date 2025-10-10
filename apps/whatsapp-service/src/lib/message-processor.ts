@@ -101,21 +101,21 @@ export async function processIncomingWhatsAppMessage(
     const response = await generateResponseWithFallback(aiMessages, context);
 
     console.log('[MessageProcessor] AI response received:', {
-      length: response.message.length,
-      has_tools: !!response.toolResults && response.toolResults.length > 0,
+      length: response.content.length,
+      model: response.model,
     });
 
     // 11. Enviar resposta via WhatsApp
     const { messageId } = await whatsappClient.sendMessage({
       to: phone,
-      message: response.message,
+      message: response.content,
     });
 
     // 12. Salvar resposta do bot
     await saveMessage({
       conversationId: conversation.id,
       role: 'assistant',
-      content: response.message,
+      content: response.content,
       whatsappMessageId: messageId,
       whatsappStatus: 'sent',
     });
@@ -127,8 +127,7 @@ export async function processIncomingWhatsAppMessage(
     //   conversation_id: conversation.id,
     //   metadata: {
     //     channel: 'whatsapp',
-    //     message_length: response.message.length,
-    //     has_tools: !!response.toolResults && response.toolResults.length > 0,
+    //     message_length: response.content.length,
     //   },
     // });
 
