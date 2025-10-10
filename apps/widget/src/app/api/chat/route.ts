@@ -43,31 +43,12 @@ export async function POST(request: NextRequest) {
         ? body.conversationId
         : null;
 
-    // Detectar se usuário está fornecendo um email diferente na mensagem
-    const emailMatch = lastUserMessage.match(EMAIL_REGEX);
-    let effectiveEmail = originalEmail;
-    let emailWasUpdated = false;
-
-    if (emailMatch) {
-      const candidateEmail = emailMatch[0].toLowerCase();
-      if (candidateEmail !== originalEmail) {
-        effectiveEmail = candidateEmail;
-        emailWasUpdated = true;
-        console.log('🔄 [Widget API] Email atualizado dinamicamente na conversa:', {
-          original: `${originalEmail.split('@')[0]}***@${originalEmail.split('@')[1]}`,
-          novo: `${candidateEmail.split('@')[0]}***@${candidateEmail.split('@')[1]}`,
-        });
-      }
-    }
-
-    console.log('📧 [Widget API] Email ativo para processamento:', `${effectiveEmail.split('@')[0]}***@${effectiveEmail.split('@')[1]}`);
-
-    // 1) Buscar ou criar customer
+    // 1) Buscar customer pelo email do onboarding
     let customerRecord = null;
     const { data: existingCustomer, error: fetchCustomerError } = await supabaseAdmin
       .from('customers')
       .select('id, email, woocommerce_id')
-      .eq('email', effectiveEmail)
+      .eq('email', originalEmail)
       .maybeSingle();
 
     if (fetchCustomerError && fetchCustomerError.code !== 'PGRST116') {
@@ -80,8 +61,8 @@ export async function POST(request: NextRequest) {
       const { data: newCustomer, error: createCustomerError } = await supabaseAdmin
         .from('customers')
         .insert({
-          email: effectiveEmail,
-          name: effectiveEmail.split('@')[0],
+          email: originalEmail,
+          name: originalEmail.split('@')[0],
         })
         .select('id, email, woocommerce_id')
         .single();
@@ -91,7 +72,56 @@ export async function POST(request: NextRequest) {
       }
 
       customerRecord = newCustomer;
-      console.log('? [Widget API] Cliente criado no Supabase:', customerRecord.id);
+      console.log('📝 [Widget API] Cliente criado no Supabase:', customerRecord.id);
+    }
+
+    // 2) Buscar conversa existente ANTES de detectar email (para pegar email salvo)
+    let existingConversation = null;
+    if (providedConversationId) {
+      const { data: conv } = await supabaseAdmin
+        .from('conversations')
+        .select('id, customer_id, effective_email')
+        .eq('id', providedConversationId)
+        .eq('customer_id', customerRecord.id)
+        .maybeSingle();
+      existingConversation = conv;
+    }
+
+    if (!existingConversation) {
+      const { data: conv } = await supabaseAdmin
+        .from('conversations')
+        .select('id, customer_id, effective_email')
+        .eq('customer_id', customerRecord.id)
+        .eq('channel', WIDGET_CHANNEL)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      existingConversation = conv;
+    }
+
+    // 3) Determinar effective email: detectado > salvo > onboarding
+    const emailMatch = lastUserMessage.match(EMAIL_REGEX);
+    let effectiveEmail: string;
+    let emailWasUpdated = false;
+
+    if (emailMatch) {
+      // Email detectado na mensagem atual
+      effectiveEmail = emailMatch[0].toLowerCase();
+      if (effectiveEmail !== originalEmail) {
+        emailWasUpdated = true;
+        console.log('🔍 [Widget API] Email detectado na mensagem:', {
+          novo: `${effectiveEmail.split('@')[0]}***@${effectiveEmail.split('@')[1]}`
+        });
+      }
+    } else if (existingConversation?.effective_email) {
+      // Usar email salvo da conversa
+      effectiveEmail = existingConversation.effective_email;
+      console.log('♻️ [Widget API] Reutilizando email salvo da conversa:', `${effectiveEmail.split('@')[0]}***@${effectiveEmail.split('@')[1]}`);
+    } else {
+      // Fallback: usar email do onboarding
+      effectiveEmail = originalEmail;
+      console.log('📧 [Widget API] Usando email do onboarding:', `${effectiveEmail.split('@')[0]}***@${effectiveEmail.split('@')[1]}`);
     }
 
     // 2) Mapear customer_id do WooCommerce
@@ -135,41 +165,31 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 3) Identificar ou criar conversa
-    let activeConversationId: string | null = null;
+    // 4) Criar ou atualizar conversa com effective_email
+    let activeConversationId: string | null = existingConversation?.id || null;
 
-    if (!emailWasUpdated && providedConversationId) {
-      const { data: existingConversation, error: existingConversationError } = await supabaseAdmin
-        .from('conversations')
-        .select('id, customer_id')
-        .eq('id', providedConversationId)
-        .maybeSingle();
+    if (activeConversationId) {
+      // Conversa existe - verificar se effective_email mudou
+      const savedEmail = existingConversation?.effective_email;
 
-      if (!existingConversationError && existingConversation?.customer_id === customerRecord.id) {
-        activeConversationId = existingConversation.id;
+      if (savedEmail !== effectiveEmail) {
+        // Email mudou, atualizar
+        await supabaseAdmin
+          .from('conversations')
+          .update({
+            effective_email: effectiveEmail,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', activeConversationId);
+
+        console.log('🔄 [Widget API] Email da conversa atualizado de',
+          savedEmail ? `${savedEmail.split('@')[0]}***` : 'null',
+          'para',
+          `${effectiveEmail.split('@')[0]}***`
+        );
       }
-    }
-
-    if (!activeConversationId) {
-      const { data: existingActive, error: activeConversationError } = await supabaseAdmin
-        .from('conversations')
-        .select('id')
-        .eq('customer_id', customerRecord.id)
-        .eq('channel', WIDGET_CHANNEL)
-        .eq('status', 'active')
-        .order('created_at', { ascending: false })
-        .limit(1);
-
-      if (activeConversationError) {
-        throw activeConversationError;
-      }
-
-      if (existingActive && existingActive.length > 0) {
-        activeConversationId = existingActive[0].id;
-      }
-    }
-
-    if (!activeConversationId) {
+    } else {
+      // Criar nova conversa COM effective_email
       const { data: newConversation, error: createConversationError } = await supabaseAdmin
         .from('conversations')
         .insert({
@@ -177,16 +197,17 @@ export async function POST(request: NextRequest) {
           channel: WIDGET_CHANNEL,
           status: 'active',
           language: 'es',
+          effective_email: effectiveEmail,
         })
         .select('id')
         .single();
 
       if (createConversationError || !newConversation) {
-        throw createConversationError || new Error('No fue posible crear la conversaci�n');
+        throw createConversationError || new Error('No fue posible crear la conversación');
       }
 
       activeConversationId = newConversation.id;
-      console.log('?? [Widget API] Nueva conversaci�n creada:', activeConversationId);
+      console.log('💬 [Widget API] Nova conversa criada com email:', `${effectiveEmail.split('@')[0]}***`);
     }
 
     // 4) Construir hist�rico para a IA
