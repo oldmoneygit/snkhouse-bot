@@ -200,6 +200,17 @@ export interface WooCommerceCategory {
   count: number;
 }
 
+export interface WooCommerceCustomer {
+  id: number;
+  email: string;
+  first_name: string;
+  last_name: string;
+  role: string;
+  username: string;
+  date_created: string;
+  date_modified: string;
+}
+
 export interface ProductSearchParams {
   search?: string;
   category?: number;

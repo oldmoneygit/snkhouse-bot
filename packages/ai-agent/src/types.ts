@@ -18,3 +18,9 @@ export interface AgentConfig {
   temperature: number;
   maxTokens: number;
 }
+
+export interface AgentContext {
+  conversationId?: string;
+  customerId?: number | null;
+  customerEmail?: string | null;
+}

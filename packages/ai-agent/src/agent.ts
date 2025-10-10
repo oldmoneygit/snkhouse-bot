@@ -1,4 +1,4 @@
-import { ConversationMessage, AgentResponse } from './types';
+import { ConversationMessage, AgentResponse, AgentContext } from './types';
 import { generateWithOpenAI } from './openai-agent';
 import { generateWithAnthropic } from './anthropic-agent';
 import { FALLBACK_RESPONSE } from './prompts';
@@ -7,14 +7,15 @@ import { FALLBACK_RESPONSE } from './prompts';
  * Gera resposta usando OpenAI com fallback para Anthropic
  */
 export async function generateResponseWithFallback(
-  messages: ConversationMessage[]
+  messages: ConversationMessage[],
+  context: AgentContext = {}
 ): Promise<AgentResponse> {
   console.log('🤖 [Agent] Iniciando geração com fallback...');
 
   try {
     // Tentar OpenAI primeiro (com tools)
     console.log('🔄 [Agent] Tentando OpenAI...');
-    return await generateWithOpenAI(messages);
+    return await generateWithOpenAI(messages, {}, context);
 
   } catch (openaiError: any) {
     console.error('❌ [Agent] OpenAI falhou:', openaiError.message);
@@ -43,8 +44,10 @@ export async function generateResponseWithFallback(
  * Gera resposta usando apenas OpenAI (com tools)
  */
 export async function generateResponse(
-  messages: ConversationMessage[]
+  messages: ConversationMessage[],
+  context: AgentContext = {}
 ): Promise<AgentResponse> {
   console.log('🤖 [Agent] Iniciando geração com OpenAI...');
-  return await generateWithOpenAI(messages);
+  return await generateWithOpenAI(messages, {}, context);
 }
+

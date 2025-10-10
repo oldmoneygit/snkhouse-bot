@@ -12,7 +12,19 @@
       "Bash(git commit:*)",
       "Bash(git push:*)",
       "Bash(tsx:*)",
-      "Read(//c/Users/PC/.cursor/**)"
+      "Read(//c/Users/PC/.cursor/**)",
+      "Bash(npx tsx:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)",
+      "Bash(npx tsc:*)",
+      "Bash(curl -X POST http://localhost:3002/api/chat -H \"Content-Type: application/json\" -d \"{\"\"messages\"\":[{\"\"role\"\":\"\"user\"\",\"\"content\"\":\"\"hola\"\"}],\"\"customerEmail\"\":\"\"test@example.com\"\"}\")",
+      "Bash(curl -X POST http://localhost:3002/api/chat -H \"Content-Type: application/json\" -d \"{\"\"messages\"\":[{\"\"role\"\":\"\"user\"\",\"\"content\"\":\"\"Hola, necesito ayuda\"\"}],\"\"customerEmail\"\":\"\"test@example.com\"\"}\")",
+      "Bash(curl -X POST http://localhost:3002/api/chat -H \"Content-Type: application/json\" -d \"{\"\"messages\"\":[{\"\"role\"\":\"\"user\"\",\"\"content\"\":\"\"Mi email correcto es suporte@stealthify.ai\"\"}],\"\"customerEmail\"\":\"\"test@example.com\"\"}\")",
+      "Bash(python:*)",
+      "Bash(curl -s -X POST http://localhost:3002/api/chat -H \"Content-Type: application/json\" -d \"{\"\"messages\"\":[{\"\"role\"\":\"\"user\"\",\"\"content\"\":\"\"Mi email es suporte@stealthify.ai\"\"}],\"\"customerEmail\"\":\"\"test@example.com\"\"}\")",
+      "Bash(curl -s -X POST http://localhost:3002/api/chat -H \"Content-Type: application/json\" -d \"{\"\"messages\"\":[{\"\"role\"\":\"\"user\"\",\"\"content\"\":\"\"oi, quais são meus pedidos?\"\"}],\"\"customerEmail\"\":\"\"jefersoncemep@gmail.com\"\"}\")",
+      "Bash(curl -s -X POST http://localhost:3002/api/chat -H \"Content-Type: application/json\" -d \"{\"\"messages\"\":[{\"\"role\"\":\"\"user\"\",\"\"content\"\":\"\"oi, quais são meus pedidos?\"\"},{\"\"role\"\":\"\"assistant\"\",\"\"content\"\":\"\"Tenés 5 pedidos\"\"},{\"\"role\"\":\"\"user\"\",\"\"content\"\":\"\"pedido 23714 já tem rastreamento?\"\"}],\"\"customerEmail\"\":\"\"jefersoncemep@gmail.com\"\"}\")"
     ],
     "deny": [],
     "ask": []
