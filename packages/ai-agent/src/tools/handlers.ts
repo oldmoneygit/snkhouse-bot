@@ -307,7 +307,7 @@ export async function executeToolCall(toolName: string, args: any): Promise<stri
           parameters: { order_id: args.order_id, customer_id: 'cust_***' },
           execution_time_ms: executionTime,
           success: false,
-          error_message: error.message,
+          error: error.message,
           conversation_id: args.conversation_id
         });
         return `Error: ${error.message}`;
@@ -340,7 +340,7 @@ export async function executeToolCall(toolName: string, args: any): Promise<stri
           parameters: { identifier: '***', limit: args.limit },
           execution_time_ms: executionTime,
           success: false,
-          error_message: error.message,
+          error: error.message,
           conversation_id: args.conversation_id
         });
         return `Error: ${error.message}`;
@@ -370,7 +370,7 @@ export async function executeToolCall(toolName: string, args: any): Promise<stri
           parameters: { order_id: args.order_id, customer_id: 'cust_***' },
           execution_time_ms: executionTime,
           success: false,
-          error_message: error.message,
+          error: error.message,
           conversation_id: args.conversation_id
         });
         return `Error: ${error.message}`;
@@ -400,7 +400,7 @@ export async function executeToolCall(toolName: string, args: any): Promise<stri
           parameters: { order_id: args.order_id, customer_id: 'cust_***' },
           execution_time_ms: executionTime,
           success: false,
-          error_message: error.message,
+          error: error.message,
           conversation_id: args.conversation_id
         });
         return `Error: ${error.message}`;
