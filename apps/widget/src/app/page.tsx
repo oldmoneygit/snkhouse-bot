@@ -9,6 +9,13 @@ interface Message {
   timestamp: Date
 }
 
+// Función para convertir markdown simple a HTML
+function formatMarkdown(text: string): string {
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // **bold** -> <strong>bold</strong>
+    .replace(/\*(.*?)\*/g, '<em>$1</em>') // *italic* -> <em>italic</em>
+}
+
 export default function Widget() {
   const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState<Message[]>([])
@@ -16,7 +23,19 @@ export default function Widget() {
   const [isLoading, setIsLoading] = useState(false)
   const [isTyping, setIsTyping] = useState(false)
   const [conversationId, setConversationId] = useState<string | null>(null)
+  const [customerEmail, setCustomerEmail] = useState<string | null>(null)
+  const [showEmailPrompt, setShowEmailPrompt] = useState(false)
+  const [emailInput, setEmailInput] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const savedEmail = typeof window !== 'undefined' ? localStorage.getItem('snkhouse_customer_email') : null
+    if (savedEmail) {
+      setCustomerEmail(savedEmail)
+    } else {
+      setShowEmailPrompt(true)
+    }
+  }, [])
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -26,8 +45,22 @@ export default function Widget() {
     scrollToBottom()
   }, [messages])
 
+  const handleEmailSubmit = () => {
+    if (emailInput && emailInput.includes('@')) {
+      localStorage.setItem('snkhouse_customer_email', emailInput)
+      setCustomerEmail(emailInput)
+      setShowEmailPrompt(false)
+    } else {
+      alert('Por favor, ingresá un email válido')
+    }
+  }
+
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return
+    if (!customerEmail) {
+      setShowEmailPrompt(true)
+      return
+    }
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -36,22 +69,26 @@ export default function Widget() {
       timestamp: new Date()
     }
 
+    const historyForRequest = [...messages, userMessage].map((msg) => ({
+      role: msg.role,
+      content: msg.content,
+    }))
+
     setMessages(prev => [...prev, userMessage])
-    const currentInput = input
     setInput('')
     setIsLoading(true)
     setIsTyping(true)
 
     try {
-      // Chamar API route do widget
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          message: currentInput,
-          conversationId: conversationId
+          messages: historyForRequest,
+          conversationId,
+          customerEmail,
         }),
       })
 
@@ -61,31 +98,34 @@ export default function Widget() {
 
       const data = await response.json()
 
-      // Salvar conversation ID na primeira mensagem
-      if (data.conversationId && !conversationId) {
-        setConversationId(data.conversationId)
-        console.log('✅ [Widget] Conversation ID salvo:', data.conversationId)
+      // Atualizar email se foi detectado um novo na conversa
+      if (data.emailUpdated && data.newEmail) {
+        console.log('🔄 [Widget] Email actualizado dinámicamente:', {
+          anterior: customerEmail?.split('@')[0] + '***',
+          nuevo: data.newEmail.split('@')[0] + '***'
+        })
+        localStorage.setItem('snkhouse_customer_email', data.newEmail)
+        setCustomerEmail(data.newEmail)
       }
 
-      // Simular delay de digitação
-      setTimeout(() => {
-        setIsTyping(false)
+      if (data.conversationId) {
+        setConversationId(data.conversationId)
+      }
 
-        const assistantMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          content: data.message,
-          role: 'assistant',
-          timestamp: new Date()
-        }
+      const assistantMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: data.message,
+        role: 'assistant',
+        timestamp: new Date()
+      }
 
-        setMessages(prev => [...prev, assistantMessage])
-        setIsLoading(false)
-      }, 1500)
-
+      setIsTyping(false)
+      setMessages(prev => [...prev, assistantMessage])
+      setIsLoading(false)
     } catch (error) {
       console.error('Error:', error)
       setIsTyping(false)
-      
+
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         content: 'Lo siento, hubo un error. Por favor intenta de nuevo.',
@@ -95,6 +135,33 @@ export default function Widget() {
       setMessages(prev => [...prev, errorMessage])
       setIsLoading(false)
     }
+  }
+
+  if (showEmailPrompt) {
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-xl p-6 max-w-sm w-full">
+          <h2 className="text-xl font-bold mb-4">��Hola! 👋</h2>
+          <p className="text-gray-600 mb-4">
+            Para ayudarte con tus pedidos, necesito tu email:
+          </p>
+          <input
+            type="email"
+            value={emailInput}
+            onChange={(e) => setEmailInput(e.target.value)}
+            placeholder="tu@email.com"
+            className="w-full px-4 py-2 border rounded-lg mb-4"
+            onKeyDown={(e) => e.key === 'Enter' && handleEmailSubmit()}
+          />
+          <button
+            onClick={handleEmailSubmit}
+            className="w-full bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-2 px-4 rounded-lg"
+          >
+            Continuar
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -218,13 +285,16 @@ export default function Widget() {
                       ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-br-md'
                       : 'bg-white text-gray-800 border border-gray-200 rounded-bl-md'
                   }`}>
-                    <div className="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</div>
+                    <div
+                      className="whitespace-pre-wrap text-sm leading-relaxed"
+                      dangerouslySetInnerHTML={{ __html: formatMarkdown(message.content) }}
+                    />
                     <div className={`text-xs mt-2 opacity-70 ${
                       message.role === 'user' ? 'text-blue-100' : 'text-gray-500'
                     }`}>
-                      {message.timestamp.toLocaleTimeString('es-AR', { 
-                        hour: '2-digit', 
-                        minute: '2-digit' 
+                      {message.timestamp.toLocaleTimeString('es-AR', {
+                        hour: '2-digit',
+                        minute: '2-digit'
                       })}
                     </div>
                   </div>
@@ -280,3 +350,4 @@ export default function Widget() {
     </div>
   )
 }
+
