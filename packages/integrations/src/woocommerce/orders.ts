@@ -49,7 +49,12 @@ export function invalidateOrderCache(orderId?: number): void {
  *
  * Exemplo: 12345 → "cust_12***5"
  */
-function sanitizeCustomerId(customerId: number): string {
+function sanitizeCustomerId(customerId: number | string): string {
+  if (typeof customerId === 'string') {
+    // É um email, sanitizar como email
+    return sanitizeEmail(customerId);
+  }
+  // É um número, sanitizar como customer ID
   const str = customerId.toString();
   if (str.length <= 3) return 'cust_***';
   return `cust_${str.slice(0, 2)}***${str.slice(-1)}`;
