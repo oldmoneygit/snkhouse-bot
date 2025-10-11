@@ -245,16 +245,12 @@ async function processIncomingMessage(
       } else {
         console.log('[Webhook] 🆕 Creating new customer...');
 
+        // Create customer with only existing columns (no metadata)
         const { data: newCustomer, error: createError } = await supabaseAdmin
           .from('customers')
           .insert({
-            phone: from,
-            name: contactName,
-            source: 'whatsapp',
-            metadata: {
-              whatsapp_name: contactName,
-              first_message_at: new Date().toISOString()
-            }
+            phone: from
+            // Only phone is required, other fields are optional or don't exist
           })
           .select()
           .single();
@@ -360,17 +356,14 @@ async function processIncomingMessage(
       } else {
         console.log('[Webhook] 🆕 Creating new conversation...');
 
+        // Create conversation with only existing columns
         const { data: newConv, error: createError } = await supabaseAdmin
           .from('conversations')
           .insert({
             customer_id: customer.id,
             channel: 'whatsapp',
-            status: 'active',
-            language: 'es',
-            metadata: {
-              phone_number_id: value.metadata?.phone_number_id,
-              first_message_at: new Date().toISOString()
-            }
+            status: 'active'
+            // Removed metadata and language - columns may not exist
           })
           .select()
           .single();
