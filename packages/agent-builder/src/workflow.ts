@@ -225,7 +225,7 @@ const updateCustomerInfo = tool({
 
 const getActivePromotions = tool({
   name: "getActivePromotions",
-  description: "Lista las promociones y cupones activos vigentes en la tienda.",
+  description: "USAR SOLO cuando el cliente PREGUNTE EXPLÍCITAMENTE por promociones, descuentos o cupones. NO llamar por defecto ni en contexto de otras preguntas.",
   parameters: z.object({
     promotion_type: z.string().nullable().optional().describe("Filtrar por tipo: 'all', 'discount', 'bogo', 'vip'")
   }),
@@ -233,10 +233,24 @@ const getActivePromotions = tool({
     try {
       console.log('🎁 [Agent Builder] Executing getActivePromotions:', input);
       const result = await getActivePromotionsHandler(input);
+
+      // Se o handler retornou erro de permissão, retornar mensagem clara
+      if (!result.success && result.error_type === 'permission_denied') {
+        return {
+          success: false,
+          message: "No puedo acceder a las promociones ahora. Por favor contactá con soporte.",
+          active_promotions: []
+        };
+      }
+
       return result;
     } catch (error: any) {
       console.error('❌ [Agent Builder] Error in getActivePromotions:', error);
-      throw error;
+      return {
+        success: false,
+        message: "Hubo un error consultando promociones. Intentá de nuevo más tarde.",
+        active_promotions: []
+      };
     }
   },
 });
@@ -406,7 +420,15 @@ const snkhouseAssistant = new Agent({
 - Si no encontrás un producto, ofrecé alternativas similares
 - Si el cliente pide tallas, SIEMPRE usá checkStock
 - Para consultas de pedidos, SIEMPRE pedí el email para validación
-- Mencioná siempre el precio cuando hables de productos`,
+- Mencioná siempre el precio cuando hables de productos
+
+📋 CUÁNDO USAR CADA HERRAMIENTA:
+- **searchProducts**: SOLO cuando el cliente menciona NOMBRE de producto (ej: "Nike Air Max", "Adidas")
+- **File Search**: Para preguntas sobre políticas, envíos, plazos, cambios, devoluciones, pagos
+- **getOrderDetails/getCustomerOrders**: SOLO cuando el cliente da un número de pedido o pide historial
+- **getActivePromotions**: SOLO cuando el cliente pregunta explícitamente por promos/descuentos
+- Si una tool falla con error, NO la llames de nuevo - informá al cliente que hay un problema técnico
+- NUNCA uses tools con parámetros vacíos o "0" - primero pedí la información necesaria al cliente`,
   model: "o4-mini",
   tools: [
     searchProducts,
@@ -488,7 +510,9 @@ export async function runAgentWorkflow(input: {
 
     // Run agent
     console.log('🚀 [Agent Builder] Running agent...');
-    const result = await runner.run(snkhouseAssistant, conversationHistory);
+    const result = await runner.run(snkhouseAssistant, conversationHistory, {
+      maxTurns: 15  // Aumentado de 10 para 15, mas con mejores instrucciones para evitar loops
+    });
 
     if (!result.finalOutput) {
       throw new Error("Agent returned no output");
@@ -504,6 +528,15 @@ export async function runAgentWorkflow(input: {
 
   } catch (error: any) {
     console.error('❌ [Agent Builder] Error:', error);
+
+    // Se atingiu o limite de turnos, provavelmente entrou em loop
+    if (error.message?.includes('Max turns') || error.message?.includes('exceeded')) {
+      return {
+        response: "Disculpá, tuve un problema técnico. ¿Podés intentar de nuevo en unos segundos?",
+        success: false,
+        error: 'max_turns_exceeded'
+      };
+    }
 
     return {
       response: "Ups, tuve un problema técnico. ¿Podés intentar de nuevo?",

@@ -98,9 +98,19 @@ export async function getActivePromotionsHandler(input: GetActivePromotionsInput
   } catch (error: any) {
     console.error('❌ [GetPromotions] Error:', error.message);
 
+    // Se for 403, provavelmente é permissão do WooCommerce
+    if (error.response?.status === 403) {
+      return {
+        success: false,
+        error: 'No tengo acceso para consultar cupones. Contactá con soporte para ver promociones actuales.',
+        active_promotions: [],
+        error_type: 'permission_denied'
+      };
+    }
+
     return {
       success: false,
-      error: 'Hubo un problema al consultar las promociones. Intentá de nuevo.',
+      error: 'Hubo un problema al consultar las promociones. Intentá de nuevo más tarde.',
       active_promotions: []
     };
   }
