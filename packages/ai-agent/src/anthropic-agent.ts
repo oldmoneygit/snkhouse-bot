@@ -64,62 +64,91 @@ export async function generateWithAnthropic(
       messagesCount: anthropicMessages.length,
     });
 
-    // VERSÃO MINIMALISTA - SEM TOOLS, SEM COMPLEXIDADE
-    console.log('[Anthropic] 🧪 MINIMAL MODE: No tools, basic config only');
-    console.log('[Anthropic] ⏳ Calling API...');
+    // 🧪 MOCK TEMPORÁRIO - API CALL DESABILITADA
+    console.log('[Anthropic] 🧪 MOCK MODE: Using fake response (API call disabled)');
+    console.log('[Anthropic] ⏳ Generating mock response...');
 
-    let response;
+    let content = '';
+
     try {
-      const startTime = Date.now();
+      // Extrair última mensagem do usuário
+      const userMessage = (anthropicMessages[anthropicMessages.length - 1]?.content || '').toLowerCase();
 
-      // CHAMADA ULTRA SIMPLIFICADA
-      response = await anthropic.messages.create({
-        model: 'claude-3-5-haiku-20241022',
-        max_tokens: 500,
-        messages: [
-          {
-            role: 'user',
-            content: anthropicMessages[anthropicMessages.length - 1]?.content || 'Hola',
-          }
-        ],
-        system: 'Eres un asistente de SNKHOUSE. Responde en español de forma breve y amigable.',
-      });
+      console.log('[Anthropic] 📋 User message preview:', userMessage.substring(0, 50) + '...');
 
-      const duration = Date.now() - startTime;
-      console.log('[Anthropic] ✅ Response received in', duration, 'ms');
+      if (userMessage.includes('nike') || userMessage.includes('zapatilla')) {
+        content = `¡Hola! Sí, tenemos zapatillas Nike disponibles.
 
-    } catch (apiError: any) {
-      console.error('[Anthropic] ❌ ERRO COMPLETO:', {
-        name: apiError.name || 'Unknown',
-        message: apiError.message || 'No message',
-        code: apiError.code,
-        status: apiError.status,
-        type: apiError.type,
-        stack: apiError.stack?.split('\n').slice(0, 5),
-      });
-      throw new Error('Anthropic API failed: ' + apiError.message);
+🔥 Algunos modelos destacados:
+• Nike Air Max - $150 USD
+• Nike Dunk Low - $120 USD
+• Nike Air Force 1 - $130 USD
+
+Todos son 100% originales con envío GRATIS a toda América Latina.
+
+¿Te interesa algún modelo en particular?`;
+      } else if (userMessage.includes('envío') || userMessage.includes('envio') || userMessage.includes('enviar')) {
+        content = `¡El envío es GRATIS para toda América Latina! 📦
+
+Tiempos de entrega:
+🇦🇷 Argentina: 3-5 días
+🇧🇷 Brasil: 5-7 días
+🇨🇱 Chile: 4-6 días
+
+¿En qué puedo ayudarte más?`;
+      } else if (userMessage.includes('stock') || userMessage.includes('disponible')) {
+        content = `Sí, tenemos stock disponible de la mayoría de modelos.
+
+Para verificar stock de un modelo específico, decime qué zapatilla te interesa y te confirmo disponibilidad al instante. 👟`;
+      } else if (userMessage.includes('pedido') || userMessage.includes('orden') || userMessage.includes('compra')) {
+        content = `Para consultar tu pedido, necesito tu número de orden o email de compra.
+
+También podés:
+• Ver estado de envío
+• Solicitar cambio/devolución
+• Contactar con soporte
+
+¿Qué necesitás?`;
+      } else if (userMessage.includes('precio') || userMessage.includes('cuanto') || userMessage.includes('costo')) {
+        content = `Nuestros precios van desde:
+
+💰 Zapatillas básicas: $80-100 USD
+🔥 Modelos populares: $120-150 USD
+⭐ Ediciones limitadas: $180-250 USD
+
+Todos con envío GRATIS y garantía de autenticidad.
+
+¿Buscás algo en particular?`;
+      } else {
+        content = `¡Hola! Soy el asistente de SNKHOUSE 👟
+
+Vendemos zapatillas 100% originales con:
+✅ Envío GRATIS
+✅ Cambio gratis en 7 días
+✅ Programa de fidelidad (3 compras = 1 gratis)
+
+¿En qué puedo ayudarte hoy?`;
+      }
+
+      console.log('[Anthropic] ✅ Mock response generated');
+      console.log('[Anthropic] 📝 Content length:', content.length);
+      console.log('[Anthropic] 📝 Preview:', content.substring(0, 100) + '...');
+
+    } catch (mockError: any) {
+      console.error('[Anthropic] ❌ Error generating mock:', mockError);
+      content = 'Hola! Soy el asistente de SNKHOUSE. ¿En qué puedo ayudarte?';
     }
 
-    console.log('[Anthropic] 📊 Response details:', {
-      id: response.id,
-      model: response.model,
-      stopReason: response.stop_reason,
-      contentBlocks: response.content?.length,
-    });
+    // NÃO FAZER CHAMADA REAL:
+    // const response = await anthropic.messages.create({ ... });
 
-    const content = response.content[0]?.type === 'text'
-      ? response.content[0].text
-      : 'Sin respuesta';
-
-    console.log('✅ [Anthropic] Resposta gerada');
-    console.log('📝 [Anthropic] Content length:', content.length);
-    console.log('📝 [Anthropic] Preview:', content.substring(0, 100) + '...');
-    console.log('🎯 [Anthropic] Tokens usados:', (response.usage?.input_tokens || 0) + (response.usage?.output_tokens || 0));
+    console.log('✅ [Anthropic] Resposta mockada gerada');
+    console.log('🎯 [Anthropic] Mock tokens (estimate):', content.length);
 
     return {
       content,
-      model: finalConfig.model,
-      tokensUsed: (response.usage?.input_tokens || 0) + (response.usage?.output_tokens || 0),
+      model: 'mock-claude-3-5-haiku',
+      tokensUsed: content.length, // Estimate
     };
 
   } catch (error: any) {
