@@ -130,18 +130,43 @@ export async function saveMessage({
 
 /**
  * Verifica se mensagem já foi processada (deduplicação)
+ * Com timeout de 3 segundos para não travar o processamento
  */
 export async function isMessageProcessed(whatsappMessageId: string): Promise<boolean> {
-  const { data, error } = await supabase
-    .from('messages')
-    .select('id')
-    .eq('whatsapp_message_id', whatsappMessageId)
-    .maybeSingle();
+  try {
+    console.log('[ConversationHelper] 🔍 Checking duplicate with 3s timeout...');
 
-  if (error) {
-    console.error('[ConversationHelper] Error checking message:', error);
-    return false;
+    // Query com timeout
+    const checkPromise = supabase
+      .from('messages')
+      .select('id')
+      .eq('whatsapp_message_id', whatsappMessageId)
+      .maybeSingle();
+
+    // Timeout de 3 segundos
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('Duplicate check timeout')), 3000)
+    );
+
+    const { data, error } = await Promise.race([
+      checkPromise,
+      timeoutPromise
+    ]);
+
+    if (error) {
+      console.warn('[ConversationHelper] ⚠️ Error checking message (assuming not processed):', error.message);
+      return false; // Se der erro, assumir que não foi processada
+    }
+
+    const isProcessed = !!data;
+    console.log('[ConversationHelper] ✅ Duplicate check result:', isProcessed ? 'ALREADY PROCESSED' : 'NEW MESSAGE');
+
+    return isProcessed;
+
+  } catch (error: any) {
+    console.warn('[ConversationHelper] ⚠️ Duplicate check failed/timeout (assuming not processed):',
+      error instanceof Error ? error.message : 'Unknown error'
+    );
+    return false; // Se der timeout, assumir que não foi processada (melhor processar duplicado que não processar)
   }
-
-  return !!data;
 }
