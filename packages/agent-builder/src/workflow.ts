@@ -1,6 +1,18 @@
 import { fileSearchTool, Agent, AgentInputItem, Runner } from "@openai/agents";
 import { OpenAI } from "openai";
 import { runGuardrails } from "@openai/guardrails";
+import {
+  searchProducts,
+  getOrderDetails,
+  getCustomerOrders,
+  updateShippingAddress,
+  getTrackingInfo,
+  createReturnRequest,
+  checkProductStock,
+  updateCustomerInfo,
+  getActivePromotions,
+  checkVipStatus
+} from './api-tools';
 
 
 // Tool definitions
@@ -338,7 +350,17 @@ RECORDATORIOS FINALES
 ⚡ Responde rápido y de forma completa`,
   model: "o4-mini",
   tools: [
-    fileSearch
+    fileSearch,
+    searchProducts,
+    getOrderDetails,
+    getCustomerOrders,
+    updateShippingAddress,
+    getTrackingInfo,
+    createReturnRequest,
+    checkProductStock,
+    updateCustomerInfo,
+    getActivePromotions,
+    checkVipStatus
   ],
   modelSettings: {
     reasoning: {
