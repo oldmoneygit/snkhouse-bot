@@ -5,6 +5,14 @@ import { runGuardrails } from "@openai/guardrails";
 import { searchProductsHandler } from './handlers/search-products';
 import { checkStockHandler } from './handlers/check-stock';
 import { getProductDetailsHandler } from './handlers/get-product-details';
+import { getOrderDetailsHandler } from './handlers/get-order-details';
+import { getCustomerOrdersHandler } from './handlers/get-customer-orders';
+import { getTrackingInfoHandler } from './handlers/get-tracking-info';
+import { updateShippingAddressHandler } from './handlers/update-shipping-address';
+import { createReturnRequestHandler } from './handlers/create-return-request';
+import { updateCustomerInfoHandler } from './handlers/update-customer-info';
+import { getActivePromotionsHandler } from './handlers/get-active-promotions';
+import { checkVipStatusHandler } from './handlers/check-vip-status';
 
 // ========================================
 // TOOL DEFINITIONS WITH REAL HANDLERS
@@ -15,9 +23,9 @@ const searchProducts = tool({
   description: "Busca productos en el catálogo de WooCommerce por palabras clave. Retorna hasta 10 resultados con información básica (ID, nombre, precio, imagen).",
   parameters: z.object({
     query: z.string().describe("Palabra clave para buscar productos (ej: 'nike air max', 'adidas running')"),
-    category: z.string().optional().nullable().describe("Categoría opcional (ej: 'hombre', 'mujer', 'deportivo')"),
-    max_price: z.number().optional().nullable().describe("Precio máximo en USD"),
-    limit: z.number().optional().nullable().default(5).describe("Número máximo de resultados (default: 5, max: 10)")
+    category: z.string().nullable().optional().describe("Categoría opcional (ej: 'hombre', 'mujer', 'deportivo')"),
+    max_price: z.number().nullable().optional().describe("Precio máximo en USD"),
+    limit: z.number().nullable().optional().default(5).describe("Número máximo de resultados (default: 5, max: 10)")
   }),
   execute: async (input, context) => {
     const startTime = Date.now();
@@ -65,6 +73,187 @@ const getProductDetails = tool({
       return result;
     } catch (error: any) {
       console.error('❌ [Agent Builder] Error in getProductDetails:', error);
+      throw error;
+    }
+  },
+});
+
+// ========================================
+// ORDER MANAGEMENT TOOLS
+// ========================================
+
+const getOrderDetails = tool({
+  name: "getOrderDetails",
+  description: "Consulta los detalles completos de un pedido específico: status, productos, dirección de envío, tracking, fecha estimada de entrega.",
+  parameters: z.object({
+    order_id: z.string().describe("Número del pedido (ej: '12345')"),
+    customer_email: z.string().describe("Email del cliente para validación")
+  }),
+  execute: async (input, context) => {
+    try {
+      console.log('📦 [Agent Builder] Executing getOrderDetails:', input);
+      const result = await getOrderDetailsHandler(input);
+      return result;
+    } catch (error: any) {
+      console.error('❌ [Agent Builder] Error in getOrderDetails:', error);
+      throw error;
+    }
+  },
+});
+
+const getCustomerOrders = tool({
+  name: "getCustomerOrders",
+  description: "Lista todos los pedidos de un cliente por email. Útil para consultar historial completo.",
+  parameters: z.object({
+    customer_email: z.string().describe("Email del cliente"),
+    status: z.string().nullable().optional().describe("Filtrar por status: 'all', 'processing', 'completed', etc."),
+    limit: z.number().nullable().optional().describe("Número máximo de pedidos (default: 5, max: 20)")
+  }),
+  execute: async (input, context) => {
+    try {
+      console.log('📋 [Agent Builder] Executing getCustomerOrders:', input);
+      const result = await getCustomerOrdersHandler(input);
+      return result;
+    } catch (error: any) {
+      console.error('❌ [Agent Builder] Error in getCustomerOrders:', error);
+      throw error;
+    }
+  },
+});
+
+const getTrackingInfo = tool({
+  name: "getTrackingInfo",
+  description: "Obtiene información de seguimiento (tracking) de un pedido: código tracking, URL de seguimiento, estado actual.",
+  parameters: z.object({
+    order_id: z.string().describe("Número del pedido"),
+    customer_email: z.string().describe("Email del cliente para validación")
+  }),
+  execute: async (input, context) => {
+    try {
+      console.log('🚚 [Agent Builder] Executing getTrackingInfo:', input);
+      const result = await getTrackingInfoHandler(input);
+      return result;
+    } catch (error: any) {
+      console.error('❌ [Agent Builder] Error in getTrackingInfo:', error);
+      throw error;
+    }
+  },
+});
+
+const updateShippingAddress = tool({
+  name: "updateShippingAddress",
+  description: "Modifica la dirección de envío de un pedido (SOLO si está en estado 'pending', 'processing' o 'on-hold').",
+  parameters: z.object({
+    order_id: z.string().describe("Número del pedido"),
+    customer_email: z.string().describe("Email del cliente para validación"),
+    new_address: z.object({
+      address_1: z.string().describe("Dirección principal"),
+      address_2: z.string().nullable().optional().describe("Apartamento, piso, etc."),
+      city: z.string().describe("Ciudad"),
+      state: z.string().describe("Provincia/Estado"),
+      postcode: z.string().describe("Código postal"),
+      country: z.string().nullable().optional().describe("País (opcional)")
+    })
+  }),
+  execute: async (input, context) => {
+    try {
+      console.log('📍 [Agent Builder] Executing updateShippingAddress:', input);
+      const result = await updateShippingAddressHandler(input);
+      return result;
+    } catch (error: any) {
+      console.error('❌ [Agent Builder] Error in updateShippingAddress:', error);
+      throw error;
+    }
+  },
+});
+
+const createReturnRequest = tool({
+  name: "createReturnRequest",
+  description: "Crea una solicitud de devolución para un pedido. Genera un Return ID y etiqueta.",
+  parameters: z.object({
+    order_id: z.string().describe("Número del pedido"),
+    customer_email: z.string().describe("Email del cliente para validación"),
+    reason: z.string().describe("Motivo: 'defectuoso', 'producto_incorrecto', 'no_satisfecho', 'otro'"),
+    description: z.string().describe("Descripción detallada del problema"),
+    has_photos: z.boolean().nullable().optional().describe("¿Cliente tiene fotos? (default: false)")
+  }),
+  execute: async (input, context) => {
+    try {
+      console.log('🔄 [Agent Builder] Executing createReturnRequest:', input);
+      const result = await createReturnRequestHandler(input);
+      return result;
+    } catch (error: any) {
+      console.error('❌ [Agent Builder] Error in createReturnRequest:', error);
+      throw error;
+    }
+  },
+});
+
+// ========================================
+// CUSTOMER & PROMOTIONS TOOLS
+// ========================================
+
+const updateCustomerInfo = tool({
+  name: "updateCustomerInfo",
+  description: "Actualiza información del cliente: email, teléfono, o dirección de facturación.",
+  parameters: z.object({
+    current_email: z.string().describe("Email actual del cliente"),
+    updates: z.object({
+      new_email: z.string().nullable().optional().describe("Nuevo email"),
+      phone: z.string().nullable().optional().describe("Nuevo teléfono"),
+      billing_address: z.object({
+        address_1: z.string().nullable().optional(),
+        address_2: z.string().nullable().optional(),
+        city: z.string().nullable().optional(),
+        state: z.string().nullable().optional(),
+        postcode: z.string().nullable().optional(),
+        country: z.string().nullable().optional()
+      }).nullable().optional().describe("Nueva dirección de facturación")
+    })
+  }),
+  execute: async (input, context) => {
+    try {
+      console.log('👤 [Agent Builder] Executing updateCustomerInfo:', input);
+      const result = await updateCustomerInfoHandler(input);
+      return result;
+    } catch (error: any) {
+      console.error('❌ [Agent Builder] Error in updateCustomerInfo:', error);
+      throw error;
+    }
+  },
+});
+
+const getActivePromotions = tool({
+  name: "getActivePromotions",
+  description: "Lista las promociones y cupones activos vigentes en la tienda.",
+  parameters: z.object({
+    promotion_type: z.string().nullable().optional().describe("Filtrar por tipo: 'all', 'discount', 'bogo', 'vip'")
+  }),
+  execute: async (input, context) => {
+    try {
+      console.log('🎁 [Agent Builder] Executing getActivePromotions:', input);
+      const result = await getActivePromotionsHandler(input);
+      return result;
+    } catch (error: any) {
+      console.error('❌ [Agent Builder] Error in getActivePromotions:', error);
+      throw error;
+    }
+  },
+});
+
+const checkVipStatus = tool({
+  name: "checkVipStatus",
+  description: "Consulta el estado VIP del cliente: nivel, compras realizadas, rewards ganados, cuántas compras faltan para próximo reward.",
+  parameters: z.object({
+    customer_email: z.string().describe("Email del cliente")
+  }),
+  execute: async (input, context) => {
+    try {
+      console.log('⭐ [Agent Builder] Executing checkVipStatus:', input);
+      const result = await checkVipStatusHandler(input);
+      return result;
+    } catch (error: any) {
+      console.error('❌ [Agent Builder] Error in checkVipStatus:', error);
       throw error;
     }
   },
@@ -190,23 +379,47 @@ const snkhouseAssistant = new Agent({
 - Respuestas BREVES (máximo 3-4 líneas)
 
 🔧 HERRAMIENTAS DISPONIBLES:
-SIEMPRE que el cliente pregunte por productos:
-1. **searchProducts** - Para buscar productos por palabras clave
-2. **checkStock** - Para verificar disponibilidad y tallas
-3. **getProductDetails** - Para info completa de un producto
-4. **File Search** - Para FAQs sobre envíos, cambios, políticas
+
+**PRODUCTOS:**
+1. **searchProducts** - Buscar productos por palabras clave
+2. **checkStock** - Verificar disponibilidad y tallas
+3. **getProductDetails** - Info completa de un producto
+
+**PEDIDOS:**
+4. **getOrderDetails** - Consultar detalles de un pedido específico
+5. **getCustomerOrders** - Ver historial completo de pedidos del cliente
+6. **getTrackingInfo** - Obtener código tracking y URL de seguimiento
+7. **updateShippingAddress** - Modificar dirección de envío (si está en proceso)
+8. **createReturnRequest** - Crear solicitud de devolución con RMA ID
+
+**CLIENTE:**
+9. **updateCustomerInfo** - Actualizar email, teléfono o dirección
+10. **checkVipStatus** - Consultar estado VIP, rewards y beneficios
+11. **getActivePromotions** - Ver cupones y promociones vigentes
+
+**CONOCIMIENTO:**
+12. **File Search** - FAQs sobre envíos, cambios, políticas
 
 ⚠️ REGLAS IMPORTANTES:
-- NUNCA inventes información de stock o precios
-- SIEMPRE usá las tools antes de confirmar disponibilidad
+- NUNCA inventes información de stock, precios, o tracking
+- SIEMPRE usá las tools antes de confirmar cualquier información
 - Si no encontrás un producto, ofrecé alternativas similares
 - Si el cliente pide tallas, SIEMPRE usá checkStock
+- Para consultas de pedidos, SIEMPRE pedí el email para validación
 - Mencioná siempre el precio cuando hables de productos`,
   model: "o4-mini",
   tools: [
     searchProducts,
     checkStock,
     getProductDetails,
+    getOrderDetails,
+    getCustomerOrders,
+    getTrackingInfo,
+    updateShippingAddress,
+    createReturnRequest,
+    updateCustomerInfo,
+    checkVipStatus,
+    getActivePromotions,
     fileSearch
   ],
   modelSettings: {

@@ -97,6 +97,36 @@ export class WooCommerceClient {
     }
   }
 
+  /**
+   * Generic POST method for raw API access
+   */
+  async post<T = any>(endpoint: string, data?: any): Promise<{ data: T }> {
+    console.log(`📝 [WooCommerce] Generic POST: ${endpoint}`);
+    try {
+      const response = await this.client.post<T>(endpoint, data);
+      console.log(`✅ [WooCommerce] POST ${endpoint} successful`);
+      return response;
+    } catch (error: any) {
+      console.error(`❌ [WooCommerce] POST ${endpoint} failed:`, error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Generic PUT method for raw API access
+   */
+  async put<T = any>(endpoint: string, data?: any): Promise<{ data: T }> {
+    console.log(`✏️ [WooCommerce] Generic PUT: ${endpoint}`);
+    try {
+      const response = await this.client.put<T>(endpoint, data);
+      console.log(`✅ [WooCommerce] PUT ${endpoint} successful`);
+      return response;
+    } catch (error: any) {
+      console.error(`❌ [WooCommerce] PUT ${endpoint} failed:`, error.message);
+      throw error;
+    }
+  }
+
   async getProducts(params: ProductSearchParams = {}, useCache = true): Promise<WooCommerceProduct[]> {
     const cacheKey = `products:${JSON.stringify(params)}`;
 
