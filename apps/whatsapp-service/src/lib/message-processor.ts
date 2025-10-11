@@ -37,9 +37,163 @@ export async function processIncomingWhatsAppMessage(
       text: messageBody
     });
 
-    // TEMPORÁRIO: Processar SEM banco de dados (Supabase ainda não implementado)
-    console.log('[MessageProcessor] ⚠️ SIMPLIFIED MODE: Skipping database operations');
-    console.log('[MessageProcessor] 🤖 Calling AI Agent directly...');
+    // REATIVADO: Processar COM banco de dados (Supabase)
+    console.log('[MessageProcessor] 💾 FULL MODE: Using Supabase for persistence');
+
+    let customer: any;
+    let conversation: any;
+    const context = {
+      conversationId: 'temp-conv-' + Date.now(),
+      customerId: undefined as string | undefined,
+      customerEmail: undefined as string | undefined,
+    };
+
+    // TENTAR usar Supabase (com timeout e fallback)
+    try {
+      const { supabaseAdmin } = await import('@snkhouse/database');
+
+      // 1. CRIAR/BUSCAR CUSTOMER
+      console.log('[MessageProcessor] 👤 Finding or creating customer...');
+
+      const customerOperation = (async () => {
+        // Buscar customer existente por telefone
+        const { data: existingCustomer } = await supabaseAdmin
+          .from('customers')
+          .select('*')
+          .eq('phone', from)
+          .single();
+
+        if (existingCustomer) {
+          // Atualizar last_message_at
+          await supabaseAdmin
+            .from('customers')
+            .update({ updated_at: new Date().toISOString() })
+            .eq('id', existingCustomer.id);
+
+          return existingCustomer;
+        }
+
+        // Criar novo customer
+        const { data: newCustomer, error } = await supabaseAdmin
+          .from('customers')
+          .insert({
+            phone: from,
+            name: contactName,
+            source: 'whatsapp',
+            metadata: {
+              whatsapp_name: contactName,
+              last_message_at: new Date().toISOString(),
+            }
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        return newCustomer;
+      })();
+
+      customer = await Promise.race([
+        customerOperation,
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Customer timeout after 5s')), 5000)
+        )
+      ]);
+
+      console.log('[MessageProcessor] ✅ Customer found/created:', {
+        id: customer.id,
+        phone: customer.phone,
+      });
+
+      // 2. CRIAR/BUSCAR CONVERSA
+      console.log('[MessageProcessor] 💬 Getting or creating conversation...');
+
+      const conversationOperation = (async () => {
+        // Buscar conversa ativa existente
+        const { data: existingConv } = await supabaseAdmin
+          .from('conversations')
+          .select('*')
+          .eq('customer_id', customer.id)
+          .eq('channel', 'whatsapp')
+          .eq('status', 'active')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        if (existingConv) {
+          // Atualizar updated_at
+          await supabaseAdmin
+            .from('conversations')
+            .update({ updated_at: new Date().toISOString() })
+            .eq('id', existingConv.id);
+
+          return existingConv;
+        }
+
+        // Criar nova conversa
+        const { data: newConv, error } = await supabaseAdmin
+          .from('conversations')
+          .insert({
+            customer_id: customer.id,
+            channel: 'whatsapp',
+            status: 'active',
+            language: 'es',
+            metadata: {
+              phone_number_id: process.env.WHATSAPP_PHONE_NUMBER_ID,
+              last_message_at: new Date().toISOString(),
+            }
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        return newConv;
+      })();
+
+      conversation = await Promise.race([
+        conversationOperation,
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Conversation timeout after 5s')), 5000)
+        )
+      ]);
+
+      console.log('[MessageProcessor] ✅ Conversation created:', conversation.id);
+
+      // 3. SALVAR MENSAGEM DO USUÁRIO
+      console.log('[MessageProcessor] 💾 Saving user message...');
+
+      await Promise.race([
+        supabaseAdmin.from('messages').insert({
+          conversation_id: conversation.id,
+          role: 'user',
+          content: messageBody,
+          metadata: {
+            whatsapp_message_id: message.id,
+            timestamp: message.timestamp,
+            from: from,
+          }
+        }),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Save message timeout after 3s')), 3000)
+        )
+      ]);
+
+      console.log('[MessageProcessor] ✅ User message saved to database');
+
+      // Atualizar contexto com IDs reais
+      context.customerId = customer.id;
+      context.conversationId = conversation.id;
+      context.customerEmail = customer.email;
+
+    } catch (error) {
+      console.error('[MessageProcessor] ⚠️ Database error (continuing without DB):',
+        error instanceof Error ? error.message : String(error));
+
+      console.log('[MessageProcessor] ⚠️ Falling back to temporary IDs');
+
+      // FALLBACK: IDs temporários se DB falhar
+      context.customerId = 'temp-customer-' + from;
+      context.conversationId = 'temp-conv-' + Date.now();
+    }
 
     // Preparar mensagem para AI
     const aiMessages: ConversationMessage[] = [
@@ -48,13 +202,6 @@ export async function processIncomingWhatsAppMessage(
         content: messageBody,
       }
     ];
-
-    // Contexto mínimo
-    const context = {
-      conversationId: `temp-conv-${Date.now()}`,
-      customerId: undefined,
-      customerEmail: undefined,
-    };
 
     console.log('[MessageProcessor] 🤖 Processing with AI Agent...', {
       messageLength: messageBody.length,
@@ -102,6 +249,38 @@ export async function processIncomingWhatsAppMessage(
         messageId: sendResult.messageId?.slice(0, 20) + '...',
         success: !!sendResult.messageId
       });
+
+      // Salvar resposta da IA no banco (se temos conversation ID real)
+      if (context.conversationId && !context.conversationId.toString().startsWith('temp-')) {
+        try {
+          console.log('[MessageProcessor] 💾 Saving AI response to database...');
+
+          const { supabaseAdmin } = await import('@snkhouse/database');
+
+          await Promise.race([
+            supabaseAdmin.from('messages').insert({
+              conversation_id: context.conversationId,
+              role: 'assistant',
+              content: response.content,
+              metadata: {
+                model: response.model,
+                whatsapp_message_id: sendResult.messageId,
+                sent_at: new Date().toISOString(),
+              }
+            }),
+            new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('Save AI response timeout')), 3000)
+            )
+          ]);
+
+          console.log('[MessageProcessor] ✅ AI response saved to database');
+        } catch (saveError) {
+          console.error('[MessageProcessor] ⚠️ Failed to save AI response (ignored):',
+            saveError instanceof Error ? saveError.message : String(saveError));
+        }
+      } else {
+        console.log('[MessageProcessor] ⚠️ Skipping AI response save (temp conversation ID)');
+      }
 
     } catch (sendError: any) {
       console.error('[MessageProcessor] ❌ ERROR SENDING MESSAGE:', {
