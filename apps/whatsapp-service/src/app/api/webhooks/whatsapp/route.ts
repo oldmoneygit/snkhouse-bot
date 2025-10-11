@@ -169,24 +169,31 @@ async function processIncomingMessage(
         throw new Error('❌ supabaseAdmin is not initialized!');
       }
 
-      // Query with timeout
-      console.log('[Webhook] 🏗️ Building query...');
-      const queryPromise = supabaseAdmin
-        .from('customers')
-        .select('*')
-        .eq('phone', from)
-        .maybeSingle();
+      // Query with timeout - CRITICAL: Execute query immediately
+      console.log('[Webhook] 🏗️ Building and executing query...');
 
-      console.log('[Webhook] ✅ Query built, creating timeout promise...');
+      const executeQuery = async () => {
+        console.log('[Webhook] 🚀 Query execution started...');
+        const result = await supabaseAdmin
+          .from('customers')
+          .select('*')
+          .eq('phone', from)
+          .maybeSingle();
+        console.log('[Webhook] ✅ Query execution completed!');
+        return result;
+      };
 
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Customer query timeout after 10 seconds')), 10000)
-      );
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => {
+          console.log('[Webhook] ⏰ TIMEOUT TRIGGERED after 10 seconds!');
+          reject(new Error('Customer query timeout after 10 seconds'));
+        }, 10000);
+      });
 
       console.log('[Webhook] ⏱️ Starting Promise.race with 10s timeout...');
 
       const { data: existingCustomer, error: customerQueryError } = await Promise.race([
-        queryPromise,
+        executeQuery(),
         timeoutPromise
       ]) as any;
 
@@ -260,25 +267,33 @@ async function processIncomingMessage(
 
       console.log('[Webhook] 🔍 About to query conversation for customer:', customer.id);
 
-      // Query with timeout
-      const queryPromise = supabaseAdmin
-        .from('conversations')
-        .select('*')
-        .eq('customer_id', customer.id)
-        .eq('channel', 'whatsapp')
-        .eq('status', 'active')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      // Query with timeout - Execute immediately
+      const executeConvQuery = async () => {
+        console.log('[Webhook] 🚀 Conversation query execution started...');
+        const result = await supabaseAdmin
+          .from('conversations')
+          .select('*')
+          .eq('customer_id', customer.id)
+          .eq('channel', 'whatsapp')
+          .eq('status', 'active')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        console.log('[Webhook] ✅ Conversation query execution completed!');
+        return result;
+      };
 
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Conversation query timeout after 10 seconds')), 10000)
-      );
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => {
+          console.log('[Webhook] ⏰ Conversation TIMEOUT TRIGGERED after 10 seconds!');
+          reject(new Error('Conversation query timeout after 10 seconds'));
+        }, 10000);
+      });
 
       console.log('[Webhook] ⏱️ Starting conversation query with 10s timeout...');
 
       const { data: activeConv, error: convQueryError } = await Promise.race([
-        queryPromise,
+        executeConvQuery(),
         timeoutPromise
       ]) as any;
 
