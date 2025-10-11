@@ -51,15 +51,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ received: true }, { status: 200 });
     }
 
-    // 4. Processar assincronamente
-    const responsePromise = processWebhookAsync(body);
+    // 4. Processar e aguardar (Vercel Hobby plan requires this)
+    console.log('[Webhook] 🔄 Starting synchronous processing...');
 
-    // Não esperar o processamento terminar
-    responsePromise.catch((error) => {
-      console.error('[Webhook] ❌ Async processing error:', error);
-    });
+    try {
+      await processWebhookAsync(body);
+      console.log('[Webhook] ✅ Processing completed successfully');
+    } catch (error) {
+      console.error('[Webhook] ❌ Processing error:', error);
+    }
 
-    // 5. Retornar 200 OK IMEDIATAMENTE
+    // 5. Retornar 200 OK
     return NextResponse.json({ received: true }, { status: 200 });
 
   } catch (error: any) {
@@ -195,21 +197,21 @@ async function processIncomingMessage(
       const timeoutPromise = new Promise((_, reject) => {
         let elapsed = 0;
         const interval = setInterval(() => {
-          elapsed += 2;
-          console.log(`[Webhook] ⏳ Waiting... ${elapsed}s / 10s`);
-          if (elapsed >= 10) {
+          elapsed += 1;
+          console.log(`[Webhook] ⏳ Waiting... ${elapsed}s / 5s`);
+          if (elapsed >= 5) {
             clearInterval(interval);
           }
-        }, 2000);
+        }, 1000);
 
         setTimeout(() => {
           clearInterval(interval);
-          console.log('[Webhook] ⏰ TIMEOUT TRIGGERED after 10 seconds!');
-          reject(new Error('Customer query timeout after 10 seconds'));
-        }, 10000);
+          console.log('[Webhook] ⏰ TIMEOUT TRIGGERED after 5 seconds!');
+          reject(new Error('Customer query timeout after 5 seconds'));
+        }, 5000);
       });
 
-      console.log('[Webhook] ⏱️ Starting Promise.race with 10s timeout...');
+      console.log('[Webhook] ⏱️ Starting Promise.race with 5s timeout...');
 
       const { data: existingCustomer, error: customerQueryError } = await Promise.race([
         executeQuery(),
@@ -314,21 +316,21 @@ async function processIncomingMessage(
       const timeoutPromise = new Promise((_, reject) => {
         let elapsed = 0;
         const interval = setInterval(() => {
-          elapsed += 2;
-          console.log(`[Webhook] ⏳ Conversation waiting... ${elapsed}s / 10s`);
-          if (elapsed >= 10) {
+          elapsed += 1;
+          console.log(`[Webhook] ⏳ Conversation waiting... ${elapsed}s / 5s`);
+          if (elapsed >= 5) {
             clearInterval(interval);
           }
-        }, 2000);
+        }, 1000);
 
         setTimeout(() => {
           clearInterval(interval);
-          console.log('[Webhook] ⏰ Conversation TIMEOUT TRIGGERED after 10 seconds!');
-          reject(new Error('Conversation query timeout after 10 seconds'));
-        }, 10000);
+          console.log('[Webhook] ⏰ Conversation TIMEOUT TRIGGERED after 5 seconds!');
+          reject(new Error('Conversation query timeout after 5 seconds'));
+        }, 5000);
       });
 
-      console.log('[Webhook] ⏱️ Starting conversation query with 10s timeout...');
+      console.log('[Webhook] ⏱️ Starting conversation query with 5s timeout...');
 
       const { data: activeConv, error: convQueryError } = await Promise.race([
         executeConvQuery(),
