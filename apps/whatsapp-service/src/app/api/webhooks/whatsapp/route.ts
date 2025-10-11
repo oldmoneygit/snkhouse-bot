@@ -1,14 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { WhatsAppClient } from '@snkhouse/integrations';
+import { processIncomingWhatsAppMessage } from '@/lib/message-processor';
 import type { WebhookPayload } from '@/lib/types';
 
 const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN!;
-
-// Inicializar WhatsApp client
-const whatsappClient = new WhatsAppClient({
-  phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID!,
-  accessToken: process.env.WHATSAPP_ACCESS_TOKEN!,
-});
 
 /**
  * GET: Verificação do webhook (Meta valida a URL)
@@ -105,7 +99,7 @@ async function processWebhookAsync(payload: WebhookPayload): Promise<void> {
 }
 
 /**
- * Processa uma mensagem recebida
+ * Processa uma mensagem recebida com AI Agent
  */
 async function processIncomingMessage(
   message: any,
@@ -123,33 +117,23 @@ async function processIncomingMessage(
     return;
   }
 
-  const from = message.from;
-  const userMessage = message.text.body;
-
   try {
-    // Resposta automática simples (sem IA por enquanto)
-    const autoResponse = `¡Hola! Soy el asistente de SNKHOUSE 🎯
+    console.log('[Webhook] 🤖 Processing with AI Agent...');
 
-Recibí tu mensaje: "${userMessage}"
+    // Usar o message-processor existente que já tem toda a lógica:
+    // - Customer management
+    // - Conversation management
+    // - AI Agent integration
+    // - Message storage
+    await processIncomingWhatsAppMessage(message, value);
 
-¿En qué puedo ayudarte?
-• Ver productos
-• Consultar stock
-• Estado de pedido
-• Información de envío`;
-
-    console.log('[Webhook] 🤖 Sending auto-response to:', from.slice(0, 4) + '***');
-
-    // Enviar resposta
-    await whatsappClient.sendMessage({
-      to: from,
-      message: autoResponse,
-    });
-
-    console.log('[Webhook] ✅ Response sent successfully');
+    console.log('[Webhook] ✅ Message processed successfully');
 
   } catch (error: any) {
-    console.error('[Webhook] ❌ Error sending response:', error);
+    console.error('[Webhook] ❌ Error processing message:', error);
+
+    // TODO: Enviar mensagem de erro amigável ao usuário
+    // Precisa importar WhatsAppClient novamente ou passar como parâmetro
   }
 }
 
