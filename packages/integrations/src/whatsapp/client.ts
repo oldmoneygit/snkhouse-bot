@@ -24,7 +24,7 @@ export class WhatsAppClient {
     this.accessToken = config.accessToken;
 
     this.api = axios.create({
-      baseURL: 'https://graph.facebook.com/v18.0',
+      baseURL: 'https://graph.facebook.com/v22.0',
       headers: {
         'Authorization': `Bearer ${config.accessToken}`,
         'Content-Type': 'application/json',
@@ -72,7 +72,7 @@ export class WhatsAppClient {
         console.warn('[WhatsAppClient] ⚠️ Token does not start with EAA (unusual)');
       }
 
-      // Preparar payload
+      // Preparar payload (seguindo o padrão correto da Meta)
       console.log('[WhatsAppClient] 📦 Preparing request payload...');
       const payload = {
         messaging_product: 'whatsapp',
@@ -85,8 +85,8 @@ export class WhatsAppClient {
 
       console.log('[WhatsAppClient] 📊 Final payload:', JSON.stringify(payload, null, 2));
 
-      // Preparar URL
-      const url = `https://graph.facebook.com/v21.0/${this.phoneNumberId}/messages`;
+      // Preparar URL (usando v22.0 conforme documentação Meta)
+      const url = `https://graph.facebook.com/v22.0/${this.phoneNumberId}/messages`;
       console.log('[WhatsAppClient] 🔗 Full URL:', url);
 
       // Criar AbortController para timeout agressivo
