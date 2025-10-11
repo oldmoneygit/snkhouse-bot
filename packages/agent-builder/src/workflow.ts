@@ -5,7 +5,6 @@ import { runGuardrails } from "@openai/guardrails";
 import { searchProductsHandler } from './handlers/search-products';
 import { checkStockHandler } from './handlers/check-stock';
 import { getProductDetailsHandler } from './handlers/get-product-details';
-// TODO: Re-enable analytics
 
 // ========================================
 // TOOL DEFINITIONS WITH REAL HANDLERS
@@ -13,7 +12,7 @@ import { getProductDetailsHandler } from './handlers/get-product-details';
 
 const searchProducts = tool({
   name: "searchProducts",
-  description: "Busca productos en el catálogo de WooCommerce por palabras clave. Retorna hasta 10 resultados con información básica (nombre, precio, imagen, stock).",
+  description: "Busca productos en el catálogo de WooCommerce por palabras clave. Retorna hasta 10 resultados con información básica (ID, nombre, precio, imagen).",
   parameters: z.object({
     query: z.string().describe("Palabra clave para buscar productos (ej: 'nike air max', 'adidas running')"),
     category: z.string().optional().nullable().describe("Categoría opcional (ej: 'hombre', 'mujer', 'deportivo')"),
@@ -25,31 +24,9 @@ const searchProducts = tool({
     try {
       console.log('🔍 [Agent Builder] Executing searchProducts:', input);
       const result = await searchProductsHandler(input);
-
-      // Track analytics
-//       await trackEvent({
-//         event_type: 'tool_execution',
-//         event_data: {
-//           tool_name: 'searchProducts',
-//           parameters: { query: input.query, limit: input.limit },
-//           execution_time_ms: Date.now() - startTime,
-//           success: result.success,
-//           results_count: result.total
-//         },
-//         conversation_id: (context as any)?.conversationId
-//       });
-
       return result;
     } catch (error: any) {
       console.error('❌ [Agent Builder] Error in searchProducts:', error);
-//       await trackEvent({
-//         event_type: 'tool_error',
-//         event_data: {
-//           tool_name: 'searchProducts',
-//           error: error.message
-//         },
-//         conversation_id: (context as any)?.conversationId
-//       });
       throw error;
     }
   },
@@ -66,19 +43,6 @@ const checkStock = tool({
     try {
       console.log('📦 [Agent Builder] Executing checkStock:', input);
       const result = await checkStockHandler(input);
-
-//       await trackEvent({
-//         event_type: 'tool_execution',
-//         event_data: {
-//           tool_name: 'checkStock',
-//           parameters: { product_id: input.product_id },
-//           execution_time_ms: Date.now() - startTime,
-//           success: result.success,
-//           in_stock: result.in_stock
-//         },
-//         conversation_id: (context as any)?.conversationId
-//       });
-
       return result;
     } catch (error: any) {
       console.error('❌ [Agent Builder] Error in checkStock:', error);
@@ -98,18 +62,6 @@ const getProductDetails = tool({
     try {
       console.log('📄 [Agent Builder] Executing getProductDetails:', input);
       const result = await getProductDetailsHandler(input);
-
-//       await trackEvent({
-//         event_type: 'tool_execution',
-//         event_data: {
-//           tool_name: 'getProductDetails',
-//           parameters: { product_id: input.product_id },
-//           execution_time_ms: Date.now() - startTime,
-//           success: result.success
-//         },
-//         conversation_id: (context as any)?.conversationId
-//       });
-
       return result;
     } catch (error: any) {
       console.error('❌ [Agent Builder] Error in getProductDetails:', error);
@@ -151,38 +103,61 @@ const guardrailsConfig = {
 
 const context = { guardrailLlm: client };
 
-// Helper to check if guardrails were triggered
-function guardrailsHasTripwire(guardrailsResult: any): boolean {
-  if (!guardrailsResult || !Array.isArray(guardrailsResult)) {
-    return false;
-  }
-
-  for (const guardrail of guardrailsResult) {
-    if (guardrail.tripwires && guardrail.tripwires.length > 0) {
-      return true;
-    }
-  }
-
-  return false;
+// Guardrails utils
+function guardrailsHasTripwire(results: any) {
+  return (results ?? []).some((r: any) => r?.tripwireTriggered === true);
 }
 
-// Helper to build guardrail failure output
-function buildGuardrailFailOutput(guardrailsResult: any): any {
-  const tripwires = [];
-
-  for (const guardrail of guardrailsResult) {
-    if (guardrail.tripwires && guardrail.tripwires.length > 0) {
-      for (const tripwire of guardrail.tripwires) {
-        tripwires.push({
-          guardrail_name: guardrail.name,
-          tripwire_name: tripwire.name,
-          confidence: tripwire.confidence || 0
-        });
-      }
+function getGuardrailSafeText(results: any, fallbackText: string) {
+  // Prefer checked_text as the generic safe/processed text
+  for (const r of results ?? []) {
+    if (r?.info && ("checked_text" in r.info)) {
+      return r.info.checked_text ?? fallbackText;
     }
   }
+  // Fall back to PII-specific anonymized_text if present
+  const pii = (results ?? []).find((r: any) => r?.info && "anonymized_text" in r.info);
+  return pii?.info?.anonymized_text ?? fallbackText;
+}
 
-  return { tripwires };
+function buildGuardrailFailOutput(results: any) {
+  const get = (name: string) => (results ?? []).find((r: any) => {
+    const info = r?.info ?? {};
+    const n = (info?.guardrail_name ?? info?.guardrailName);
+    return n === name;
+  });
+  const pii = get("Contains PII");
+  const mod = get("Moderation");
+  const jb = get("Jailbreak");
+  const hal = get("Hallucination Detection");
+  const piiCounts = Object.entries(pii?.info?.detected_entities ?? {})
+    .filter(([, v]) => Array.isArray(v))
+    .map(([k, v]) => k + ":" + (v as any).length);
+
+  return {
+    pii: {
+      failed: (piiCounts.length > 0) || pii?.tripwireTriggered === true,
+      ...(piiCounts.length ? { detected_counts: piiCounts } : {}),
+      ...(pii?.executionFailed && pii?.info?.error ? { error: pii.info.error } : {}),
+    },
+    moderation: {
+      failed: mod?.tripwireTriggered === true || ((mod?.info?.flagged_categories ?? []).length > 0),
+      ...(mod?.info?.flagged_categories ? { flagged_categories: mod.info.flagged_categories } : {}),
+      ...(mod?.executionFailed && mod?.info?.error ? { error: mod.info.error } : {}),
+    },
+    jailbreak: {
+      failed: jb?.tripwireTriggered === true,
+      ...(jb?.executionFailed && jb?.info?.error ? { error: jb.info.error } : {}),
+    },
+    hallucination: {
+      failed: hal?.tripwireTriggered === true,
+      ...(hal?.info?.reasoning ? { reasoning: hal.info.reasoning } : {}),
+      ...(hal?.info?.hallucination_type ? { hallucination_type: hal.info.hallucination_type } : {}),
+      ...(hal?.info?.hallucinated_statements ? { hallucinated_statements: hal.info.hallucinated_statements } : {}),
+      ...(hal?.info?.verified_statements ? { verified_statements: hal.info.verified_statements } : {}),
+      ...(hal?.executionFailed && hal?.info?.error ? { error: hal.info.error } : {}),
+    },
+  };
 }
 
 // ========================================
@@ -227,8 +202,7 @@ SIEMPRE que el cliente pregunte por productos:
 - Si no encontrás un producto, ofrecé alternativas similares
 - Si el cliente pide tallas, SIEMPRE usá checkStock
 - Mencioná siempre el precio cuando hables de productos`,
-
-  model: "gpt-4o-mini",
+  model: "o1-mini",
   tools: [
     searchProducts,
     checkStock,
@@ -236,9 +210,8 @@ SIEMPRE que el cliente pregunte por productos:
     fileSearch
   ],
   modelSettings: {
-    parallelToolCalls: true,
     reasoning: {
-      effort: "low",
+      effort: "medium",
       summary: "auto"
     },
     store: true
@@ -272,19 +245,16 @@ export async function runAgentWorkflow(input: {
     console.log('🛡️ [Agent Builder] Running guardrails...');
     const guardrailsResult = await runGuardrails(input.message, guardrailsConfig, context);
     const hasTripwire = guardrailsHasTripwire(guardrailsResult);
+    const anonymizedText = getGuardrailSafeText(guardrailsResult, input.message);
+    const guardrailsOutput = (hasTripwire ? buildGuardrailFailOutput(guardrailsResult ?? []) : { safe_text: (anonymizedText ?? input.message) });
 
     if (hasTripwire) {
       console.warn('⚠️ [Agent Builder] Guardrails triggered');
-//       await trackEvent({
-//         event_type: 'guardrails_triggered',
-//         event_data: buildGuardrailFailOutput(guardrailsResult),
-//         conversation_id: input.conversationId
-//       });
-
       return {
         response: "Disculpá, no puedo procesar ese mensaje. ¿Podrías reformularlo de otra manera?",
         success: false,
-        guardrails_triggered: true
+        guardrails_triggered: true,
+        guardrails_output: guardrailsOutput
       };
     }
 
@@ -311,16 +281,6 @@ export async function runAgentWorkflow(input: {
       throw new Error("Agent returned no output");
     }
 
-    // Track success
-//     await trackEvent({
-//       event_type: 'agent_response',
-//       event_data: {
-//         execution_time_ms: Date.now() - startTime,
-//         message_length: result.finalOutput.length
-//       },
-//       conversation_id: input.conversationId
-//     });
-
     console.log(`✅ [Agent Builder] Response generated in ${Date.now() - startTime}ms`);
 
     return {
@@ -331,15 +291,6 @@ export async function runAgentWorkflow(input: {
 
   } catch (error: any) {
     console.error('❌ [Agent Builder] Error:', error);
-
-//     await trackEvent({
-//       event_type: 'agent_error',
-//       event_data: {
-//         error: error.message,
-//         stack: error.stack?.substring(0, 500)
-//       },
-//       conversation_id: input.conversationId
-//     });
 
     return {
       response: "Ups, tuve un problema técnico. ¿Podés intentar de nuevo?",
