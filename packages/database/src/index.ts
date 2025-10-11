@@ -39,6 +39,7 @@ export interface Conversation {
   channel: 'widget' | 'whatsapp';
   status: 'active' | 'resolved' | 'archived';
   language: string;
+  thread_id?: string | null; // OpenAI Agent Builder thread ID for context persistence
   created_at: string;
   updated_at: string;
 }

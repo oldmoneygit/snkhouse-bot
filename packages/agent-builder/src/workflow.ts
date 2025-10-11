@@ -764,7 +764,10 @@ const snkhouseAssistant = new Agent({
 // WORKFLOW EXECUTION
 // ========================================
 
-type WorkflowInput = { input_as_text: string };
+type WorkflowInput = {
+  input_as_text: string;
+  thread_id?: string; // Optional thread ID for context persistence
+};
 
 // Main code entrypoint
 export const runWorkflow = async (workflow: WorkflowInput) => {
@@ -779,12 +782,19 @@ export const runWorkflow = async (workflow: WorkflowInput) => {
       ]
     }
   ];
-  const runner = new Runner({
+  const runnerConfig: any = {
     traceMetadata: {
       __trace_source__: "agent-builder",
       workflow_id: "wf_68ea7686147881909a7d51dc707420c901c614c3f9a1ca75"
     }
-  });
+  };
+
+  // Add threadId if provided (for continuing existing conversation)
+  if (workflow.thread_id) {
+    runnerConfig.threadId = workflow.thread_id;
+  }
+
+  const runner = new Runner(runnerConfig);
   const guardrailsInputtext = workflow.input_as_text;
   const guardrailsResult = await runGuardrails(guardrailsInputtext, guardrailsConfig, context);
   const guardrailsHastripwire = guardrailsHasTripwire(guardrailsResult);
@@ -810,8 +820,13 @@ export const runWorkflow = async (workflow: WorkflowInput) => {
         throw new Error("Agent result is undefined");
     }
 
+    // Get thread_id from the runner - it's accessible via runner.threadId
+    // If a thread_id was provided, it's reused. Otherwise, Runner creates a new one.
+    const usedThreadId = (runner as any).threadId || workflow.thread_id || null;
+
     const snkhouseAssistantResult = {
-      output_text: snkhouseAssistantResultTemp.finalOutput ?? ""
+      output_text: snkhouseAssistantResultTemp.finalOutput ?? "",
+      thread_id: usedThreadId // Return thread_id for persistence
     };
     return snkhouseAssistantResult;
   }

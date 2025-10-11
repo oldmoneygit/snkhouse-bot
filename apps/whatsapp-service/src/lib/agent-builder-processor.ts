@@ -1,5 +1,5 @@
 import { runWorkflow } from '@snkhouse/agent-builder';
-import { supabaseAdmin } from '@snkhouse/database';
+import { supabaseAdmin, type Conversation } from '@snkhouse/database';
 // TODO: Re-enable analytics tracking
 // import { analyticsTracker } from '@snkhouse/analytics';
 
@@ -19,7 +19,35 @@ export async function processMessageWithAgentBuilder({
   try {
     console.log(`🤖 [Agent Builder Processor] Processing message for conv ${conversationId}`);
 
-    // Save user message to database
+    // ========================================
+    // STEP 1: Get conversation and thread_id
+    // ========================================
+    let threadId: string | null = null;
+
+    try {
+      const { data: conversation, error: convError } = await supabaseAdmin
+        .from('conversations')
+        .select('thread_id')
+        .eq('id', conversationId)
+        .single();
+
+      if (convError) {
+        console.error('⚠️ [Agent Builder Processor] Failed to fetch conversation:', convError.message);
+      } else if (conversation) {
+        threadId = conversation.thread_id || null;
+        if (threadId) {
+          console.log(`✅ [Agent Builder Processor] Using existing thread: ${threadId}`);
+        } else {
+          console.log('🆕 [Agent Builder Processor] No thread_id found, will create new thread');
+        }
+      }
+    } catch (error: any) {
+      console.error('⚠️ [Agent Builder Processor] Error fetching thread_id:', error.message);
+    }
+
+    // ========================================
+    // STEP 2: Save user message to database
+    // ========================================
     try {
       await supabaseAdmin.from('messages').insert({
         conversation_id: conversationId,
@@ -37,9 +65,12 @@ export async function processMessageWithAgentBuilder({
       // Continue anyway - message processing is more important than DB
     }
 
-    // Run Agent Builder workflow
+    // ========================================
+    // STEP 3: Run Agent Builder workflow with thread_id
+    // ========================================
     const result = await runWorkflow({
-      input_as_text: message
+      input_as_text: message,
+      ...(threadId && { thread_id: threadId }) // Pass existing thread_id if available
     });
 
     // Check if guardrails were triggered (result will have pii/moderation/etc if guardrails failed)
@@ -68,8 +99,31 @@ export async function processMessageWithAgentBuilder({
 
     // Get the response text (result has output_text if guardrails passed)
     const responseText = 'output_text' in result ? result.output_text : 'No response';
+    const newThreadId = 'thread_id' in result ? result.thread_id : null;
 
-    // Save assistant response to database
+    // ========================================
+    // STEP 4: Save thread_id if it's new or updated
+    // ========================================
+    if (newThreadId && newThreadId !== threadId) {
+      try {
+        const { error: updateError } = await supabaseAdmin
+          .from('conversations')
+          .update({ thread_id: newThreadId })
+          .eq('id', conversationId);
+
+        if (updateError) {
+          console.error('⚠️ [Agent Builder Processor] Failed to save thread_id:', updateError.message);
+        } else {
+          console.log(`✅ [Agent Builder Processor] Thread ID saved: ${newThreadId}`);
+        }
+      } catch (error: any) {
+        console.error('⚠️ [Agent Builder Processor] Error saving thread_id:', error.message);
+      }
+    }
+
+    // ========================================
+    // STEP 5: Save assistant response to database
+    // ========================================
     try {
       await supabaseAdmin.from('messages').insert({
         conversation_id: conversationId,
@@ -78,6 +132,7 @@ export async function processMessageWithAgentBuilder({
         metadata: {
           channel: 'whatsapp',
           execution_time_ms: Date.now() - startTime,
+          thread_id: newThreadId, // Store thread_id in metadata for reference
           timestamp: new Date().toISOString()
         }
       });
