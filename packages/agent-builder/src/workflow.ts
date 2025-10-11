@@ -6,7 +6,12 @@ import { runGuardrails } from "@openai/guardrails";
 // ========================================
 // API CONFIGURATION
 // ========================================
-const API_BASE_URL = 'https://snkhouse-bot.vercel.app/api';
+// Use environment variable for API base URL, fallback to production URL
+const API_BASE_URL = process.env.API_BASE_URL || process.env.NEXT_PUBLIC_VERCEL_URL
+  ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}/api`
+  : process.env.VERCEL_URL
+  ? `https://${process.env.VERCEL_URL}/api`
+  : 'https://snkhouse-bot-whatsapp-service.vercel.app/api';
 
 // ========================================
 // TOOL DEFINITIONS WITH IMPLEMENTATIONS
