@@ -87,6 +87,9 @@ importers:
       '@snkhouse/integrations':
         specifier: workspace:*
         version: link:../../packages/integrations
+      '@woocommerce/woocommerce-rest-api':
+        specifier: ^1.0.1
+        version: 1.0.2
       axios:
         specifier: ^1.7.2
         version: 1.12.2
