@@ -81,6 +81,22 @@ export class WooCommerceClient {
     }
   }
 
+  /**
+   * Generic GET method for raw API access
+   * Use specific methods (getProduct, getProducts) when available
+   */
+  async get<T = any>(endpoint: string, params?: any): Promise<{ data: T }> {
+    console.log(`🔍 [WooCommerce] Generic GET: ${endpoint}`);
+    try {
+      const response = await this.client.get<T>(endpoint, { params });
+      console.log(`✅ [WooCommerce] GET ${endpoint} successful`);
+      return response;
+    } catch (error: any) {
+      console.error(`❌ [WooCommerce] GET ${endpoint} failed:`, error.message);
+      throw error;
+    }
+  }
+
   async getProducts(params: ProductSearchParams = {}, useCache = true): Promise<WooCommerceProduct[]> {
     const cacheKey = `products:${JSON.stringify(params)}`;
 

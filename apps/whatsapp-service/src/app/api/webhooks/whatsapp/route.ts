@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { processIncomingWhatsAppMessage } from '@/lib/message-processor';
+// UPDATED: Using Agent Builder processor instead of old message-processor
+import { processMessageWithAgentBuilder } from '@/lib/agent-builder-processor';
+// import { processIncomingWhatsAppMessage } from '@/lib/message-processor'; // OLD - Keep for rollback
 import type { WebhookPayload } from '@/lib/types';
+import { WhatsAppClient } from '@snkhouse/integrations';
+import { supabaseAdmin } from '@snkhouse/database';
 
 const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN!;
 
@@ -99,7 +103,7 @@ async function processWebhookAsync(payload: WebhookPayload): Promise<void> {
 }
 
 /**
- * Processa uma mensagem recebida com AI Agent
+ * Processa uma mensagem recebida com Agent Builder
  */
 async function processIncomingMessage(
   message: any,
@@ -117,23 +121,130 @@ async function processIncomingMessage(
     return;
   }
 
+  const from = message.from;
+  const messageText = message.text.body;
+  const contactName = value.contacts?.[0]?.profile?.name || 'Cliente';
+
   try {
-    console.log('[Webhook] 🤖 Processing with AI Agent...');
+    console.log('[Webhook] 👤 Getting/creating customer...');
 
-    // Usar o message-processor existente que já tem toda a lógica:
-    // - Customer management
-    // - Conversation management
-    // - AI Agent integration
-    // - Message storage
-    await processIncomingWhatsAppMessage(message, value);
+    // Get or create customer
+    let customer;
+    const { data: existingCustomer } = await supabaseAdmin
+      .from('customers')
+      .select('*')
+      .eq('phone', from)
+      .single();
 
-    console.log('[Webhook] ✅ Message processed successfully');
+    if (existingCustomer) {
+      customer = existingCustomer;
+      // Update last interaction
+      await supabaseAdmin
+        .from('customers')
+        .update({ updated_at: new Date().toISOString() })
+        .eq('id', customer.id);
+    } else {
+      // Create new customer
+      const { data: newCustomer } = await supabaseAdmin
+        .from('customers')
+        .insert({
+          phone: from,
+          name: contactName,
+          source: 'whatsapp',
+          metadata: {
+            whatsapp_name: contactName,
+            first_message_at: new Date().toISOString()
+          }
+        })
+        .select()
+        .single();
+
+      customer = newCustomer;
+    }
+
+    console.log('[Webhook] 💬 Getting/creating conversation...');
+
+    // Get or create conversation
+    let conversation;
+    const { data: activeConv } = await supabaseAdmin
+      .from('conversations')
+      .select('*')
+      .eq('customer_id', customer.id)
+      .eq('channel', 'whatsapp')
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (activeConv) {
+      conversation = activeConv;
+      // Update timestamp
+      await supabaseAdmin
+        .from('conversations')
+        .update({ updated_at: new Date().toISOString() })
+        .eq('id', conversation.id);
+    } else {
+      // Create new conversation
+      const { data: newConv } = await supabaseAdmin
+        .from('conversations')
+        .insert({
+          customer_id: customer.id,
+          channel: 'whatsapp',
+          status: 'active',
+          language: 'es',
+          metadata: {
+            phone_number_id: value.metadata?.phone_number_id,
+            first_message_at: new Date().toISOString()
+          }
+        })
+        .select()
+        .single();
+
+      conversation = newConv;
+    }
+
+    console.log('[Webhook] 🤖 Processing with Agent Builder...');
+
+    // Process message with Agent Builder
+    const response = await processMessageWithAgentBuilder({
+      message: messageText,
+      conversationId: conversation.id,
+      customerId: customer.id,
+      customerPhone: from
+    });
+
+    console.log('[Webhook] 📤 Sending WhatsApp response...');
+
+    // Send response
+    const whatsappClient = new WhatsAppClient({
+      phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID!,
+      accessToken: process.env.WHATSAPP_ACCESS_TOKEN!
+    });
+
+    await whatsappClient.sendMessage({
+      to: from,
+      message: response
+    });
+
+    console.log('[Webhook] ✅ Message processed and response sent successfully');
 
   } catch (error: any) {
     console.error('[Webhook] ❌ Error processing message:', error);
 
-    // TODO: Enviar mensagem de erro amigável ao usuário
-    // Precisa importar WhatsAppClient novamente ou passar como parâmetro
+    // Try to send error message to user
+    try {
+      const whatsappClient = new WhatsAppClient({
+        phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID!,
+        accessToken: process.env.WHATSAPP_ACCESS_TOKEN!
+      });
+
+      await whatsappClient.sendMessage({
+        to: from,
+        message: '⚠️ Hubo un error temporal. Por favor, intentá de nuevo en unos segundos.'
+      });
+    } catch (sendError) {
+      console.error('[Webhook] ❌ Could not send error message:', sendError);
+    }
   }
 }
 

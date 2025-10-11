@@ -24,7 +24,14 @@
       "Bash(python:*)",
       "Bash(curl -s -X POST http://localhost:3002/api/chat -H \"Content-Type: application/json\" -d \"{\"\"messages\"\":[{\"\"role\"\":\"\"user\"\",\"\"content\"\":\"\"Mi email es suporte@stealthify.ai\"\"}],\"\"customerEmail\"\":\"\"test@example.com\"\"}\")",
       "Bash(curl -s -X POST http://localhost:3002/api/chat -H \"Content-Type: application/json\" -d \"{\"\"messages\"\":[{\"\"role\"\":\"\"user\"\",\"\"content\"\":\"\"oi, quais são meus pedidos?\"\"}],\"\"customerEmail\"\":\"\"jefersoncemep@gmail.com\"\"}\")",
-      "Bash(curl -s -X POST http://localhost:3002/api/chat -H \"Content-Type: application/json\" -d \"{\"\"messages\"\":[{\"\"role\"\":\"\"user\"\",\"\"content\"\":\"\"oi, quais são meus pedidos?\"\"},{\"\"role\"\":\"\"assistant\"\",\"\"content\"\":\"\"Tenés 5 pedidos\"\"},{\"\"role\"\":\"\"user\"\",\"\"content\"\":\"\"pedido 23714 já tem rastreamento?\"\"}],\"\"customerEmail\"\":\"\"jefersoncemep@gmail.com\"\"}\")"
+      "Bash(curl -s -X POST http://localhost:3002/api/chat -H \"Content-Type: application/json\" -d \"{\"\"messages\"\":[{\"\"role\"\":\"\"user\"\",\"\"content\"\":\"\"oi, quais são meus pedidos?\"\"},{\"\"role\"\":\"\"assistant\"\",\"\"content\"\":\"\"Tenés 5 pedidos\"\"},{\"\"role\"\":\"\"user\"\",\"\"content\"\":\"\"pedido 23714 já tem rastreamento?\"\"}],\"\"customerEmail\"\":\"\"jefersoncemep@gmail.com\"\"}\")",
+      "Bash(curl \"http://localhost:3003/api/webhooks/whatsapp?hub.mode=subscribe&hub.verify_token=snkh_webhook_secret_2025&hub.challenge=TEST123\")",
+      "Bash(curl \"https://snkhouse-bot-whatsapp-service.vercel.app/api/webhooks/whatsapp?hub.mode=subscribe&hub.verify_token=snkh_webhook_secret_2025&hub.challenge=TEST123\")",
+      "Bash(• Nike Air Max - $150 USD)",
+      "Bash(• Nike Dunk Low - $120 USD)",
+      "Bash(...\"\n\n📦 \"envío\", \"envio\" →\n  \"¡El envío es GRATIS para toda América Latina!)",
+      "Bash(🇦🇷 Argentina: 3-5 días)",
+      "Bash(dir:*)"
     ],
     "deny": [],
     "ask": []
