@@ -78,17 +78,49 @@ export async function processIncomingWhatsAppMessage(
       console.warn('[MessageProcessor] ⚠️ Failed to mark as read:', markError.message);
     }
 
-    // Enviar resposta
-    console.log('[MessageProcessor] 📤 Sending WhatsApp message...');
-
-    const { messageId } = await whatsappClient.sendMessage({
-      to: from,
-      message: response.content,
+    // CRÍTICO: ENVIAR MENSAGEM AGORA!
+    console.log('[MessageProcessor] 📤 Preparing to send WhatsApp message...');
+    console.log('[MessageProcessor] 🔑 Checking WhatsApp credentials...');
+    console.log('[MessageProcessor] 📋 Config:', {
+      phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID ? 'SET' : 'MISSING',
+      phoneNumberIdValue: process.env.WHATSAPP_PHONE_NUMBER_ID,
+      accessToken: process.env.WHATSAPP_ACCESS_TOKEN ?
+        'SET (' + process.env.WHATSAPP_ACCESS_TOKEN.substring(0, 15) + '...)' : 'MISSING',
     });
 
-    console.log('[MessageProcessor] ✅ Message sent successfully!', {
-      messageId: messageId?.slice(0, 20) + '...'
-    });
+    if (!process.env.WHATSAPP_PHONE_NUMBER_ID || !process.env.WHATSAPP_ACCESS_TOKEN) {
+      throw new Error('WhatsApp credentials missing!');
+    }
+
+    console.log('[MessageProcessor] 📱 Sending to:', from.slice(0, 4) + '***');
+    console.log('[MessageProcessor] 💬 Message length:', response.content.length);
+    console.log('[MessageProcessor] 💬 Message preview:', response.content.substring(0, 100) + '...');
+
+    try {
+      console.log('[MessageProcessor] 📡 Calling WhatsApp API...');
+
+      const sendResult = await whatsappClient.sendMessage({
+        to: from,
+        message: response.content,
+      });
+
+      console.log('[MessageProcessor] ✅ MESSAGE SENT SUCCESSFULLY!');
+      console.log('[MessageProcessor] 📊 Send result:', {
+        messageId: sendResult.messageId?.slice(0, 20) + '...',
+        success: !!sendResult.messageId
+      });
+
+    } catch (sendError: any) {
+      console.error('[MessageProcessor] ❌ ERROR SENDING MESSAGE:', {
+        name: sendError instanceof Error ? sendError.name : 'Unknown',
+        message: sendError instanceof Error ? sendError.message : String(sendError),
+        status: sendError.status,
+        code: sendError.code,
+        stack: sendError instanceof Error ? sendError.stack?.substring(0, 300) : undefined,
+      });
+
+      throw sendError; // Re-throw para cair no error handler principal
+    }
 
     console.log('[MessageProcessor] 🎉 Processing completed (simplified mode)');
 
