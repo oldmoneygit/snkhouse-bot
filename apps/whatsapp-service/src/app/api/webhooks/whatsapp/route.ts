@@ -8,6 +8,9 @@ import { supabaseAdmin } from '@snkhouse/database';
 
 const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN!;
 
+// Cache de mensagens processadas (evita loop infinito)
+const processedMessages = new Set<string>();
+
 /**
  * GET: Verificação do webhook (Meta valida a URL)
  * https://developers.facebook.com/docs/graph-api/webhooks/getting-started#verification-requests
@@ -132,6 +135,28 @@ async function processIncomingMessage(
     timestamp: new Date().toISOString(),
     fullMessage: JSON.stringify(message).substring(0, 200)
   });
+
+  // PROTEÇÃO 1: Ignorar mensagens do próprio bot (sent by us)
+  // WhatsApp não envia o campo "from" para mensagens que nós enviamos
+  // Mas podemos verificar se há um recipient_id no status ou se é uma mensagem "outgoing"
+  if (!message.from) {
+    console.log('[Webhook] ⏭️ Ignoring outgoing message (no from field)');
+    return;
+  }
+
+  // PROTEÇÃO 2: Verificar se já processamos esta mensagem (deduplicação)
+  const messageId = message.id;
+  const cacheKey = `processed_msg_${messageId}`;
+
+  // Usar um Set em memória para cache simples (você pode usar Redis depois)
+  if (processedMessages.has(messageId)) {
+    console.log('[Webhook] ⏭️ Message already processed, skipping:', messageId);
+    return;
+  }
+
+  // Marcar como processada (expira em 1 hora)
+  processedMessages.add(messageId);
+  setTimeout(() => processedMessages.delete(messageId), 3600000);
 
   // Apenas processar mensagens de texto
   if (message.type !== 'text' || !message.text?.body) {
