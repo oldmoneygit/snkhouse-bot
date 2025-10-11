@@ -36,6 +36,8 @@ export async function GET(request: NextRequest) {
  * https://developers.facebook.com/docs/whatsapp/cloud-api/webhooks/components
  */
 export async function POST(request: NextRequest) {
+  console.log('🚨🚨🚨 [WEBHOOK] POST HANDLER CALLED! 🚨🚨🚨', new Date().toISOString());
+
   try {
     // 1. Parse do body
     const body: WebhookPayload = await request.json();
@@ -72,23 +74,30 @@ export async function POST(request: NextRequest) {
  * Processa o webhook de forma assíncrona (não bloqueia resposta)
  */
 async function processWebhookAsync(payload: WebhookPayload): Promise<void> {
+  console.log('🚨🚨🚨 [WEBHOOK] processWebhookAsync CALLED! 🚨🚨🚨');
   console.log('[Webhook] ✅ Processing webhook async...');
+  console.log('[Webhook] 📊 Payload entries:', payload.entry.length);
 
   for (const entry of payload.entry) {
+    console.log('[Webhook] 🔄 Processing entry, changes:', entry.changes.length);
+
     for (const change of entry.changes) {
       const value = change.value;
 
       // Log do tipo de evento
       if (value.messages && value.messages.length > 0) {
-        console.log('[Webhook] 📥 Type: MESSAGE');
+        console.log('[Webhook] 📥 Type: MESSAGE, count:', value.messages.length);
       } else if (value.statuses && value.statuses.length > 0) {
-        console.log('[Webhook] 📊 Type: STATUS UPDATE');
+        console.log('[Webhook] 📊 Type: STATUS UPDATE, count:', value.statuses.length);
       }
 
       // Processar mensagens recebidas
       if (value.messages && value.messages.length > 0) {
+        console.log('[Webhook] 🔥 About to process messages...');
         for (const message of value.messages) {
+          console.log('[Webhook] ➡️ Calling processIncomingMessage for:', message.id);
           await processIncomingMessage(message, value);
+          console.log('[Webhook] ✅ Finished processIncomingMessage for:', message.id);
         }
       }
 
@@ -109,13 +118,17 @@ async function processIncomingMessage(
   message: any,
   value: any
 ): Promise<void> {
+  // ⚠️ CRITICAL LOG - ABSOLUTE FIRST LINE
+  console.log('🚨🚨🚨 [WEBHOOK] processIncomingMessage FUNCTION CALLED! 🚨🚨🚨');
+
   const startTime = Date.now();
 
   console.log('[Webhook] 💬 Message received START', {
     from: message.from?.substring(0, 8) + '***',
     type: message.type,
     messageId: message.id,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    fullMessage: JSON.stringify(message).substring(0, 200)
   });
 
   // Apenas processar mensagens de texto
