@@ -17,9 +17,11 @@ export interface WhatsAppClientConfig {
 export class WhatsAppClient {
   private api: AxiosInstance;
   private phoneNumberId: string;
+  private accessToken: string;
 
   constructor(config: WhatsAppClientConfig) {
     this.phoneNumberId = config.phoneNumberId;
+    this.accessToken = config.accessToken;
 
     this.api = axios.create({
       baseURL: 'https://graph.facebook.com/v18.0',
@@ -33,6 +35,7 @@ export class WhatsAppClient {
 
   /**
    * Envia uma mensagem de texto para um número WhatsApp
+   * USANDO FETCH NATIVO COM TIMEOUT AGRESSIVO
    */
   async sendMessage({ to, message }: SendMessageParams): Promise<{ messageId: string }> {
     console.log('[WhatsAppClient] 📤 sendMessage called');
@@ -48,63 +51,140 @@ export class WhatsAppClient {
       const sanitizedPhone = to.replace(/\D/g, '');
       console.log('[WhatsAppClient] ✅ Sanitized phone:', sanitizedPhone.slice(0, 4) + '***');
 
+      // Validar phoneNumberId
+      console.log('[WhatsAppClient] 🔍 Validating phoneNumberId...');
+      console.log('[WhatsAppClient] 📋 phoneNumberId:', this.phoneNumberId);
+
+      if (!this.phoneNumberId) {
+        throw new Error('phoneNumberId is missing!');
+      }
+
+      // Validar access token
+      console.log('[WhatsAppClient] 🔍 Validating access token...');
+      console.log('[WhatsAppClient] 📋 Token length:', this.accessToken.length);
+      console.log('[WhatsAppClient] 📋 Token preview:', this.accessToken.substring(0, 20) + '...');
+
+      if (!this.accessToken) {
+        throw new Error('Access token is missing!');
+      }
+
+      if (!this.accessToken.startsWith('EAA')) {
+        console.warn('[WhatsAppClient] ⚠️ Token does not start with EAA (unusual)');
+      }
+
+      // Preparar payload
       console.log('[WhatsAppClient] 📦 Preparing request payload...');
       const payload = {
         messaging_product: 'whatsapp',
-        recipient_type: 'individual',
         to: sanitizedPhone,
         type: 'text',
         text: {
-          preview_url: false,
           body: message,
         },
       };
 
-      console.log('[WhatsAppClient] 📊 Payload ready:', {
-        to: sanitizedPhone.slice(0, 4) + '***',
-        type: payload.type,
-        bodyLength: payload.text.body.length
+      console.log('[WhatsAppClient] 📊 Final payload:', JSON.stringify(payload, null, 2));
+
+      // Preparar URL
+      const url = `https://graph.facebook.com/v21.0/${this.phoneNumberId}/messages`;
+      console.log('[WhatsAppClient] 🔗 Full URL:', url);
+
+      // Criar AbortController para timeout agressivo
+      const controller = new AbortController();
+      const TIMEOUT_MS = 8000; // 8 segundos
+
+      const timeoutId = setTimeout(() => {
+        console.error('[WhatsAppClient] ⏱️ TIMEOUT! Aborting request after', TIMEOUT_MS, 'ms');
+        controller.abort();
+      }, TIMEOUT_MS);
+
+      console.log('[WhatsAppClient] ⏱️ Timeout set to:', TIMEOUT_MS, 'ms');
+
+      // Preparar headers
+      const headers = {
+        'Authorization': `Bearer ${this.accessToken}`,
+        'Content-Type': 'application/json',
+      };
+
+      console.log('[WhatsAppClient] 📋 Headers:', {
+        'Authorization': `Bearer ${this.accessToken.substring(0, 20)}...`,
+        'Content-Type': 'application/json',
       });
 
-      console.log('[WhatsAppClient] 🌐 Calling Meta Graph API...');
-      console.log('[WhatsAppClient] 🔗 URL:', `/${this.phoneNumberId}/messages`);
-      console.log('[WhatsAppClient] ⏱️  Timeout: 10000ms');
+      // Log do comando curl equivalente
+      const curlCommand = `curl -X POST "${url}" \\
+  -H "Authorization: Bearer ${this.accessToken.substring(0, 20)}..." \\
+  -H "Content-Type: application/json" \\
+  -d '${JSON.stringify(payload)}'`;
 
-      const response = await this.api.post(`/${this.phoneNumberId}/messages`, payload);
+      console.log('[WhatsAppClient] 🧪 Equivalent curl command:');
+      console.log(curlCommand);
 
-      console.log('[WhatsAppClient] ✅ API Response received!');
-      console.log('[WhatsAppClient] 📊 Response status:', response.status);
-      console.log('[WhatsAppClient] 📊 Response data:', JSON.stringify(response.data, null, 2));
+      // FAZER A CHAMADA FETCH
+      console.log('[WhatsAppClient] 🚀 Making fetch request NOW...');
+      const startTime = Date.now();
 
-      const messageId = response.data.messages[0].id;
-      console.log('[WhatsAppClient] ✅ Message sent successfully!');
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+      const duration = Date.now() - startTime;
+
+      console.log('[WhatsAppClient] ✅ Response received in', duration, 'ms');
+      console.log('[WhatsAppClient] 📊 Status:', response.status, response.statusText);
+
+      // Ler response body
+      const responseText = await response.text();
+      console.log('[WhatsAppClient] 📄 Response body:', responseText);
+
+      // Verificar se foi sucesso
+      if (!response.ok) {
+        console.error('[WhatsAppClient] ❌ API Error Response:', {
+          status: response.status,
+          statusText: response.statusText,
+          body: responseText,
+        });
+        throw new Error(`Meta API error: ${response.status} - ${responseText}`);
+      }
+
+      // Parse JSON
+      const data = JSON.parse(responseText);
+      console.log('[WhatsAppClient] 📊 Parsed response data:', JSON.stringify(data, null, 2));
+
+      // Extrair messageId
+      const messageId = data.messages?.[0]?.id;
+
+      if (!messageId) {
+        console.error('[WhatsAppClient] ❌ No messageId in response!');
+        throw new Error('No messageId in Meta API response');
+      }
+
+      console.log('[WhatsAppClient] ✅✅✅ MESSAGE SENT SUCCESSFULLY! ✅✅✅');
       console.log('[WhatsAppClient] 🆔 Message ID:', messageId);
 
       return { messageId };
 
     } catch (error: any) {
-      console.error('[WhatsAppClient] ❌ ERROR in sendMessage:', {
+      console.error('[WhatsAppClient] ❌ FETCH ERROR:', {
         name: error.name,
         message: error.message,
         code: error.code,
-        status: error.response?.status,
-        statusText: error.response?.statusText,
+        cause: error.cause,
+        isAbortError: error.name === 'AbortError',
+        isTimeout: error.message?.includes('timeout'),
       });
 
-      console.error('[WhatsAppClient] 📋 Error details:', {
-        responseData: error.response?.data,
-        to: to.slice(0, 4) + '***',
-      });
-
-      if (error.code === 'ECONNABORTED') {
-        console.error('[WhatsAppClient] ⏱️  TIMEOUT ERROR - API call exceeded 10s');
+      if (error.name === 'AbortError') {
+        console.error('[WhatsAppClient] ⏱️ REQUEST ABORTED - Meta API timeout (8s exceeded)');
+        throw new Error('Meta API timeout - request took too long (8s)');
       }
 
-      if (error.response?.data) {
-        console.error('[WhatsAppClient] 📄 Full error response:', JSON.stringify(error.response.data, null, 2));
-      }
-
-      throw new Error(`Failed to send WhatsApp message: ${error.response?.data?.error?.message || error.message}`);
+      console.error('[WhatsAppClient] 📋 Full error:', error);
+      throw error;
     }
   }
 
