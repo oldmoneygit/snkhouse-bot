@@ -109,15 +109,18 @@ async function processIncomingMessage(
   message: any,
   value: any
 ): Promise<void> {
-  console.log('[Webhook] 💬 Message received:', {
-    from: message.from,
+  const startTime = Date.now();
+
+  console.log('[Webhook] 💬 Message received START', {
+    from: message.from?.substring(0, 8) + '***',
     type: message.type,
-    text: message.text?.body || message.type,
+    messageId: message.id,
+    timestamp: new Date().toISOString()
   });
 
   // Apenas processar mensagens de texto
   if (message.type !== 'text' || !message.text?.body) {
-    console.log('[Webhook] ⏭️ Ignoring non-text message');
+    console.log('[Webhook] ⏭️ Ignoring non-text message:', message.type);
     return;
   }
 
@@ -125,114 +128,193 @@ async function processIncomingMessage(
   const messageText = message.text.body;
   const contactName = value.contacts?.[0]?.profile?.name || 'Cliente';
 
+  console.log('[Webhook] 📝 Message details:', {
+    textLength: messageText.length,
+    contactName,
+    preview: messageText.substring(0, 50) + '...'
+  });
+
   try {
-    console.log('[Webhook] 👤 Getting/creating customer...');
-
-    // Get or create customer
+    // Step 1: Get or create customer with detailed error handling
+    console.log('[Webhook] 👤 Step 1: Getting/creating customer...');
     let customer;
-    const { data: existingCustomer } = await supabaseAdmin
-      .from('customers')
-      .select('*')
-      .eq('phone', from)
-      .single();
 
-    if (existingCustomer) {
-      customer = existingCustomer;
-      // Update last interaction
-      await supabaseAdmin
-        .from('customers')
-        .update({ updated_at: new Date().toISOString() })
-        .eq('id', customer.id);
-    } else {
-      // Create new customer
-      const { data: newCustomer } = await supabaseAdmin
-        .from('customers')
-        .insert({
-          phone: from,
-          name: contactName,
-          source: 'whatsapp',
-          metadata: {
-            whatsapp_name: contactName,
-            first_message_at: new Date().toISOString()
-          }
-        })
-        .select()
-        .single();
-
-      customer = newCustomer;
-    }
-
-    console.log('[Webhook] 💬 Getting/creating conversation...');
-
-    // Get or create conversation
-    let conversation;
-    const { data: activeConv } = await supabaseAdmin
-      .from('conversations')
-      .select('*')
-      .eq('customer_id', customer.id)
-      .eq('channel', 'whatsapp')
-      .eq('status', 'active')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
-
-    if (activeConv) {
-      conversation = activeConv;
-      // Update timestamp
-      await supabaseAdmin
-        .from('conversations')
-        .update({ updated_at: new Date().toISOString() })
-        .eq('id', conversation.id);
-    } else {
-      // Create new conversation
-      const { data: newConv } = await supabaseAdmin
-        .from('conversations')
-        .insert({
-          customer_id: customer.id,
-          channel: 'whatsapp',
-          status: 'active',
-          language: 'es',
-          metadata: {
-            phone_number_id: value.metadata?.phone_number_id,
-            first_message_at: new Date().toISOString()
-          }
-        })
-        .select()
-        .single();
-
-      conversation = newConv;
-    }
-
-    console.log('[Webhook] 🤖 Processing with Agent Builder...');
-
-    // Process message with Agent Builder
-    const response = await processMessageWithAgentBuilder({
-      message: messageText,
-      conversationId: conversation.id,
-      customerId: customer.id,
-      customerPhone: from
-    });
-
-    console.log('[Webhook] 📤 Sending WhatsApp response...');
-
-    // Send response
-    const whatsappClient = new WhatsAppClient({
-      phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID!,
-      accessToken: process.env.WHATSAPP_ACCESS_TOKEN!
-    });
-
-    await whatsappClient.sendMessage({
-      to: from,
-      message: response
-    });
-
-    console.log('[Webhook] ✅ Message processed and response sent successfully');
-
-  } catch (error: any) {
-    console.error('[Webhook] ❌ Error processing message:', error);
-
-    // Try to send error message to user
     try {
+      const customerStart = Date.now();
+
+      const { data: existingCustomer, error: customerQueryError } = await supabaseAdmin
+        .from('customers')
+        .select('*')
+        .eq('phone', from)
+        .maybeSingle();
+
+      console.log('[Webhook] 📊 Customer query result:', {
+        duration: Date.now() - customerStart,
+        found: !!existingCustomer,
+        error: customerQueryError?.message
+      });
+
+      if (customerQueryError) {
+        console.error('[Webhook] ❌ Customer query error:', {
+          message: customerQueryError.message,
+          code: customerQueryError.code,
+          details: customerQueryError.details
+        });
+        throw new Error(`Customer query failed: ${customerQueryError.message}`);
+      }
+
+      if (existingCustomer) {
+        customer = existingCustomer;
+        console.log('[Webhook] ✅ Existing customer found:', customer.id);
+
+        // Update last interaction
+        await supabaseAdmin
+          .from('customers')
+          .update({ updated_at: new Date().toISOString() })
+          .eq('id', customer.id);
+      } else {
+        console.log('[Webhook] 🆕 Creating new customer...');
+
+        const { data: newCustomer, error: createError } = await supabaseAdmin
+          .from('customers')
+          .insert({
+            phone: from,
+            name: contactName,
+            source: 'whatsapp',
+            metadata: {
+              whatsapp_name: contactName,
+              first_message_at: new Date().toISOString()
+            }
+          })
+          .select()
+          .single();
+
+        if (createError) {
+          console.error('[Webhook] ❌ Customer creation error:', createError);
+          throw new Error(`Customer creation failed: ${createError.message}`);
+        }
+
+        customer = newCustomer;
+        console.log('[Webhook] ✅ New customer created:', customer.id);
+      }
+    } catch (customerError: any) {
+      console.error('[Webhook] ❌ CRITICAL: Customer handling failed:', {
+        error: customerError.message,
+        stack: customerError.stack?.substring(0, 500),
+        duration: Date.now() - startTime
+      });
+
+      // Send error message to user
+      await sendErrorMessage(from, '⚠️ Hubo un problema temporal con nuestro sistema. Por favor, intentá de nuevo en unos segundos.');
+      return; // Exit early
+    }
+
+    // Step 2: Get or create conversation
+    console.log('[Webhook] 💬 Step 2: Getting/creating conversation...');
+    let conversation;
+
+    try {
+      const convStart = Date.now();
+
+      const { data: activeConv, error: convQueryError } = await supabaseAdmin
+        .from('conversations')
+        .select('*')
+        .eq('customer_id', customer.id)
+        .eq('channel', 'whatsapp')
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      console.log('[Webhook] 📊 Conversation query result:', {
+        duration: Date.now() - convStart,
+        found: !!activeConv,
+        error: convQueryError?.message
+      });
+
+      if (convQueryError) {
+        console.error('[Webhook] ❌ Conversation query error:', convQueryError);
+        throw new Error(`Conversation query failed: ${convQueryError.message}`);
+      }
+
+      if (activeConv) {
+        conversation = activeConv;
+        console.log('[Webhook] ✅ Active conversation found:', conversation.id);
+
+        // Update timestamp
+        await supabaseAdmin
+          .from('conversations')
+          .update({ updated_at: new Date().toISOString() })
+          .eq('id', conversation.id);
+      } else {
+        console.log('[Webhook] 🆕 Creating new conversation...');
+
+        const { data: newConv, error: createError } = await supabaseAdmin
+          .from('conversations')
+          .insert({
+            customer_id: customer.id,
+            channel: 'whatsapp',
+            status: 'active',
+            language: 'es',
+            metadata: {
+              phone_number_id: value.metadata?.phone_number_id,
+              first_message_at: new Date().toISOString()
+            }
+          })
+          .select()
+          .single();
+
+        if (createError) {
+          console.error('[Webhook] ❌ Conversation creation error:', createError);
+          throw new Error(`Conversation creation failed: ${createError.message}`);
+        }
+
+        conversation = newConv;
+        console.log('[Webhook] ✅ New conversation created:', conversation.id);
+      }
+    } catch (conversationError: any) {
+      console.error('[Webhook] ❌ CRITICAL: Conversation handling failed:', {
+        error: conversationError.message,
+        stack: conversationError.stack?.substring(0, 500)
+      });
+
+      await sendErrorMessage(from, '⚠️ Hubo un problema temporal. Por favor, intentá nuevamente.');
+      return;
+    }
+
+    // Step 3: Process with Agent Builder
+    console.log('[Webhook] 🤖 Step 3: Processing with Agent Builder...');
+    let response: string;
+
+    try {
+      const agentStart = Date.now();
+
+      response = await processMessageWithAgentBuilder({
+        message: messageText,
+        conversationId: conversation.id,
+        customerId: customer.id,
+        customerPhone: from
+      });
+
+      console.log('[Webhook] ✅ Agent Builder response ready:', {
+        duration: Date.now() - agentStart,
+        responseLength: response.length
+      });
+    } catch (agentError: any) {
+      console.error('[Webhook] ❌ Agent Builder failed:', {
+        error: agentError.message,
+        stack: agentError.stack?.substring(0, 500)
+      });
+
+      response = '⚠️ Disculpá, tuve un problema procesando tu mensaje. ¿Podés intentar de nuevo?';
+    }
+
+    // Step 4: Send WhatsApp response
+    console.log('[Webhook] 📤 Step 4: Sending WhatsApp response...');
+
+    try {
+      const sendStart = Date.now();
+
       const whatsappClient = new WhatsAppClient({
         phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID!,
         accessToken: process.env.WHATSAPP_ACCESS_TOKEN!
@@ -240,11 +322,51 @@ async function processIncomingMessage(
 
       await whatsappClient.sendMessage({
         to: from,
-        message: '⚠️ Hubo un error temporal. Por favor, intentá de nuevo en unos segundos.'
+        message: response
       });
-    } catch (sendError) {
-      console.error('[Webhook] ❌ Could not send error message:', sendError);
+
+      console.log('[Webhook] ✅ Response sent successfully:', {
+        duration: Date.now() - sendStart
+      });
+    } catch (sendError: any) {
+      console.error('[Webhook] ❌ Failed to send WhatsApp response:', {
+        error: sendError.message
+      });
+      // Don't throw - message was processed
     }
+
+    console.log('[Webhook] ✅ Message processing COMPLETE:', {
+      totalDuration: Date.now() - startTime,
+      messageId: message.id
+    });
+
+  } catch (error: any) {
+    console.error('[Webhook] ❌ CRITICAL: Message processing failed:', {
+      error: error.message,
+      stack: error.stack?.substring(0, 500),
+      duration: Date.now() - startTime,
+      from: from?.substring(0, 8) + '***'
+    });
+
+    // Always try to send error message
+    await sendErrorMessage(from, '⚠️ Hubo un error inesperado. Nuestro equipo fue notificado.');
+  }
+}
+
+/**
+ * Helper to send error messages with error handling
+ */
+async function sendErrorMessage(to: string, message: string): Promise<void> {
+  try {
+    const whatsappClient = new WhatsAppClient({
+      phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID!,
+      accessToken: process.env.WHATSAPP_ACCESS_TOKEN!
+    });
+
+    await whatsappClient.sendMessage({ to, message });
+    console.log('[Webhook] ✅ Error message sent to user');
+  } catch (sendError: any) {
+    console.error('[Webhook] ❌ Could not send error message:', sendError.message);
   }
 }
 
