@@ -69,17 +69,10 @@ export async function processIncomingWhatsAppMessage(
       preview: response.content.substring(0, 100) + '...'
     });
 
-    // Marcar como lida (tentar, mas não bloquear se falhar)
-    try {
-      console.log('[MessageProcessor] 👁️ Marking as read...');
-      await whatsappClient.markAsRead({ messageId: message.id });
-      console.log('[MessageProcessor] ✅ Marked as read');
-    } catch (markError: any) {
-      console.warn('[MessageProcessor] ⚠️ Failed to mark as read:', markError.message);
-    }
-
-    // CRÍTICO: ENVIAR MENSAGEM AGORA!
-    console.log('[MessageProcessor] 📤 Preparing to send WhatsApp message...');
+    // =====================================================
+    // 🔴 PRIORIDADE #1: ENVIAR MENSAGEM IMEDIATAMENTE!
+    // =====================================================
+    console.log('[MessageProcessor] 📤 PRIORITY: Sending WhatsApp message FIRST...');
     console.log('[MessageProcessor] 🔑 Checking WhatsApp credentials...');
     console.log('[MessageProcessor] 📋 Config:', {
       phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID ? 'SET' : 'MISSING',
@@ -104,7 +97,7 @@ export async function processIncomingWhatsAppMessage(
         message: response.content,
       });
 
-      console.log('[MessageProcessor] ✅ MESSAGE SENT SUCCESSFULLY!');
+      console.log('[MessageProcessor] ✅✅✅ MESSAGE SENT SUCCESSFULLY! ✅✅✅');
       console.log('[MessageProcessor] 📊 Send result:', {
         messageId: sendResult.messageId?.slice(0, 20) + '...',
         success: !!sendResult.messageId
@@ -122,7 +115,19 @@ export async function processIncomingWhatsAppMessage(
       throw sendError; // Re-throw para cair no error handler principal
     }
 
-    console.log('[MessageProcessor] 🎉 Processing completed (simplified mode)');
+    // =====================================================
+    // 🟡 OPCIONAL: Marcar como lida (DEPOIS do envio)
+    // =====================================================
+    try {
+      console.log('[MessageProcessor] 👁️ [OPTIONAL] Marking as read...');
+      await whatsappClient.markAsRead({ messageId: message.id });
+      console.log('[MessageProcessor] ✅ Marked as read');
+    } catch (markError: any) {
+      console.warn('[MessageProcessor] ⚠️ Failed to mark as read (ignored):', markError.message);
+      // Não lançar erro - marking as read não é crítico
+    }
+
+    console.log('[MessageProcessor] 🎉🎉🎉 Processing completed successfully! 🎉🎉🎉');
 
   } catch (error: any) {
     console.error('[MessageProcessor] ❌ ERROR:', error);
