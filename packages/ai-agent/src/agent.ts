@@ -4,56 +4,70 @@ import { generateWithAnthropic } from './anthropic-agent';
 import { FALLBACK_RESPONSE } from './prompts';
 
 /**
- * Gera resposta usando Claude APENAS
- * OpenAI DESABILITADO temporariamente devido a timeouts
+ * Gera resposta com TRIPLE FALLBACK
+ * 1. Claude (primeiro)
+ * 2. OpenAI (se Claude falhar)
+ * 3. Mock básico (se ambos falharem)
  */
 export async function generateResponseWithFallback(
   messages: ConversationMessage[],
   context: AgentContext = {}
 ): Promise<AgentResponse> {
   console.log('🤖 [Agent] Iniciando geração...');
-  console.log('⚠️  [Agent] OpenAI DISABLED temporarily - using Claude only');
+  console.log('🔄 [Agent] Trying Claude first, OpenAI as fallback...');
 
-  // Validar Anthropic API Key
-  console.log('🔑 [Agent] Checking Anthropic API Key...');
+  let response: AgentResponse;
 
-  if (!process.env.ANTHROPIC_API_KEY) {
-    console.error('❌ [Agent] ANTHROPIC_API_KEY not found in environment!');
-    throw new Error('Anthropic API Key is missing');
-  }
-
-  if (!process.env.ANTHROPIC_API_KEY.startsWith('sk-ant-')) {
-    console.error('❌ [Agent] ANTHROPIC_API_KEY format invalid (should start with sk-ant-)');
-    throw new Error('Anthropic API Key format is invalid');
-  }
-
-  console.log('✅ [Agent] Anthropic API Key found:',
-    process.env.ANTHROPIC_API_KEY.substring(0, 20) + '...');
-
-  // OPENAI DESABILITADO - COMENTADO
-  // try {
-  //   console.log('🔄 [Agent] Tentando OpenAI...');
-  //   return await generateWithOpenAI(messages, {}, context);
-  // } catch (openaiError: any) {
-  //   console.error('❌ [Agent] OpenAI falhou:', openaiError.message);
-  // }
-
+  // ===========================================
+  // 1️⃣ TENTAR CLAUDE PRIMEIRO
+  // ===========================================
   try {
-    // Usar Claude Haiku 3.5 diretamente
-    console.log('🚀 [Agent] Using Claude Haiku 3.5 directly...');
-    return await generateWithAnthropic(messages, {
-      model: 'claude-3-5-haiku-20241022'
-    });
+    console.log('[Agent] 🚀 Attempting Claude...');
 
-  } catch (anthropicError: any) {
-    console.error('❌ [Agent] Claude failed:', anthropicError.message);
+    response = await Promise.race([
+      generateWithAnthropic(messages, {
+        model: 'claude-3-5-haiku-20241022'
+      }),
+      new Promise<AgentResponse>((_, reject) =>
+        setTimeout(() => reject(new Error('Claude overall timeout')), 12000)
+      )
+    ]);
 
-    // Último recurso: resposta estática
-    console.log('🔄 [Agent] Usando resposta de fallback estática...');
-    return {
-      content: FALLBACK_RESPONSE,
-      model: 'fallback',
-    };
+    console.log('[Agent] ✅ Claude succeeded!');
+    return response;
+
+  } catch (claudeError: any) {
+    console.error('[Agent] ❌ Claude failed:', claudeError.message);
+
+    // ===========================================
+    // 2️⃣ FALLBACK PARA OPENAI
+    // ===========================================
+    try {
+      console.log('[Agent] 🔄 Trying OpenAI as fallback...');
+
+      response = await Promise.race([
+        generateWithOpenAI(messages, {}, context),
+        new Promise<AgentResponse>((_, reject) =>
+          setTimeout(() => reject(new Error('OpenAI overall timeout')), 12000)
+        )
+      ]);
+
+      console.log('[Agent] ✅ OpenAI succeeded!');
+      return response;
+
+    } catch (openaiError: any) {
+      console.error('[Agent] ❌ OpenAI also failed:', openaiError.message);
+
+      // ===========================================
+      // 3️⃣ ÚLTIMO FALLBACK: MOCK BÁSICO
+      // ===========================================
+      console.log('[Agent] ⚠️ Both AIs failed, using emergency fallback');
+
+      return {
+        content: '¡Hola! Soy el asistente de SNKHOUSE. Actualmente estoy experimentando problemas técnicos, pero estoy aquí para ayudarte. ¿En qué puedo asistirte?',
+        model: 'emergency-fallback',
+      };
+    }
   }
 }
 

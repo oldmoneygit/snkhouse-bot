@@ -64,91 +64,97 @@ export async function generateWithAnthropic(
       messagesCount: anthropicMessages.length,
     });
 
-    // 🧪 MOCK TEMPORÁRIO - API CALL DESABILITADA
-    console.log('[Anthropic] 🧪 MOCK MODE: Using fake response (API call disabled)');
-    console.log('[Anthropic] ⏳ Generating mock response...');
+    // 🚀 MODO REAL - CHAMANDO CLAUDE API
+    console.log('[Anthropic] 🚀 REAL MODE: Calling Claude API (with timeout)');
+    console.log('[Anthropic] ⚠️ Tools DISABLED for initial testing');
 
     let content = '';
+    let responseModel = finalConfig.model;
+    let tokensUsed = 0;
 
     try {
-      // Extrair última mensagem do usuário
-      const userMessage = (anthropicMessages[anthropicMessages.length - 1]?.content || '').toLowerCase();
+      // Criar cliente Anthropic
+      const anthropicClient = getAnthropicClient();
 
-      console.log('[Anthropic] 📋 User message preview:', userMessage.substring(0, 50) + '...');
+      // Timeout de 10 segundos
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        console.log('[Anthropic] ⏱️ TIMEOUT! Aborting Claude API call after 10s');
+        controller.abort();
+      }, 10000);
 
-      if (userMessage.includes('nike') || userMessage.includes('zapatilla')) {
-        content = `¡Hola! Sí, tenemos zapatillas Nike disponibles.
+      console.log('[Anthropic] 📡 Making Claude API request...');
+      const startTime = Date.now();
 
-🔥 Algunos modelos destacados:
-• Nike Air Max - $150 USD
-• Nike Dunk Low - $120 USD
-• Nike Air Force 1 - $130 USD
+      // System prompt
+      const systemPrompt = `Eres un asistente de SNKHOUSE, una tienda de zapatillas premium.
 
-Todos son 100% originales con envío GRATIS a toda América Latina.
+INFORMACIÓN IMPORTANTE:
+- Vendemos zapatillas 100% originales
+- Envío GRATIS a toda América Latina
+- Cambio gratis en 7 días
+- Programa de fidelidad: 3 compras = 1 gratis
+- Tiempos de entrega: Argentina 3-5 días, Brasil 5-7 días, Chile 4-6 días
 
-¿Te interesa algún modelo en particular?`;
-      } else if (userMessage.includes('envío') || userMessage.includes('envio') || userMessage.includes('enviar')) {
-        content = `¡El envío es GRATIS para toda América Latina! 📦
+INSTRUCCIONES:
+- Responde SIEMPRE en español
+- Sé breve y directo (máximo 3-4 líneas)
+- Sé amigable y usa emojis ocasionalmente
+- Si preguntan por productos específicos, di que estás verificando disponibilidad
+- No inventes precios o productos que no conoces`;
 
-Tiempos de entrega:
-🇦🇷 Argentina: 3-5 días
-🇧🇷 Brasil: 5-7 días
-🇨🇱 Chile: 4-6 días
+      const response = await anthropicClient.messages.create({
+        model: finalConfig.model,
+        max_tokens: 500,
+        temperature: 0.7,
+        system: systemPrompt,
+        messages: anthropicMessages,
+        // SEM TOOLS por enquanto (adicionar depois)
+      });
 
-¿En qué puedo ayudarte más?`;
-      } else if (userMessage.includes('stock') || userMessage.includes('disponible')) {
-        content = `Sí, tenemos stock disponible de la mayoría de modelos.
+      clearTimeout(timeoutId);
+      const duration = Date.now() - startTime;
 
-Para verificar stock de un modelo específico, decime qué zapatilla te interesa y te confirmo disponibilidad al instante. 👟`;
-      } else if (userMessage.includes('pedido') || userMessage.includes('orden') || userMessage.includes('compra')) {
-        content = `Para consultar tu pedido, necesito tu número de orden o email de compra.
+      console.log('[Anthropic] ✅ Response received in', duration, 'ms');
+      console.log('[Anthropic] 📊 Response details:', {
+        id: response.id,
+        model: response.model,
+        stopReason: response.stop_reason,
+        usage: response.usage,
+      });
 
-También podés:
-• Ver estado de envío
-• Solicitar cambio/devolución
-• Contactar con soporte
+      // Extrair texto
+      content = response.content
+        .filter((block: any) => block.type === 'text')
+        .map((block: any) => block.text)
+        .join('\n');
 
-¿Qué necesitás?`;
-      } else if (userMessage.includes('precio') || userMessage.includes('cuanto') || userMessage.includes('costo')) {
-        content = `Nuestros precios van desde:
+      responseModel = response.model;
+      tokensUsed = response.usage.output_tokens || 0;
 
-💰 Zapatillas básicas: $80-100 USD
-🔥 Modelos populares: $120-150 USD
-⭐ Ediciones limitadas: $180-250 USD
-
-Todos con envío GRATIS y garantía de autenticidad.
-
-¿Buscás algo en particular?`;
-      } else {
-        content = `¡Hola! Soy el asistente de SNKHOUSE 👟
-
-Vendemos zapatillas 100% originales con:
-✅ Envío GRATIS
-✅ Cambio gratis en 7 días
-✅ Programa de fidelidad (3 compras = 1 gratis)
-
-¿En qué puedo ayudarte hoy?`;
-      }
-
-      console.log('[Anthropic] ✅ Mock response generated');
-      console.log('[Anthropic] 📝 Content length:', content.length);
+      console.log('[Anthropic] 📝 Response length:', content.length, 'chars');
       console.log('[Anthropic] 📝 Preview:', content.substring(0, 100) + '...');
 
-    } catch (mockError: any) {
-      console.error('[Anthropic] ❌ Error generating mock:', mockError);
-      content = 'Hola! Soy el asistente de SNKHOUSE. ¿En qué puedo ayudarte?';
+    } catch (apiError: any) {
+      console.error('[Anthropic] ❌ API Error:', {
+        name: apiError.name,
+        message: apiError.message,
+        isAbortError: apiError.name === 'AbortError',
+        isTimeout: apiError.message?.includes('timeout'),
+      });
+
+      // Se timeout ou erro, lançar para fallback
+      if (apiError.name === 'AbortError') {
+        throw new Error('Claude API timeout after 10s');
+      }
+
+      throw apiError;
     }
-
-    // NÃO FAZER CHAMADA REAL:
-    // const response = await anthropic.messages.create({ ... });
-
-    console.log('✅ [Anthropic] Resposta mockada gerada');
-    console.log('🎯 [Anthropic] Mock tokens (estimate):', content.length);
 
     return {
       content,
-      model: 'mock-claude-3-5-haiku',
-      tokensUsed: content.length, // Estimate
+      model: responseModel,
+      tokensUsed,
     };
 
   } catch (error: any) {
