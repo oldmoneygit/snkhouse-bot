@@ -41,7 +41,7 @@ export async function generateWithAnthropic(
     const anthropicMessages = messages
       .filter(msg => msg.role !== 'system')
       .map(msg => ({
-        role: msg.role === 'assistant' ? 'assistant' : 'user',
+        role: msg.role === 'assistant' ? ('assistant' as const) : ('user' as const),
         content: msg.content,
       }));
 
