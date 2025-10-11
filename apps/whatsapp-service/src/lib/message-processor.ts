@@ -37,7 +37,7 @@ export async function processIncomingWhatsAppMessage(
       text: messageBody
     });
 
-    // TEMPORÁRIO: Processar SEM banco de dados
+    // TEMPORÁRIO: Processar SEM banco de dados (Supabase ainda não implementado)
     console.log('[MessageProcessor] ⚠️ SIMPLIFIED MODE: Skipping database operations');
     console.log('[MessageProcessor] 🤖 Calling AI Agent directly...');
 
