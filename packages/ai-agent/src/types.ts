@@ -21,6 +21,6 @@ export interface AgentConfig {
 
 export interface AgentContext {
   conversationId?: string;
-  customerId?: number | null;
+  customerId?: string | number | null; // Supabase UUID (string) or legacy numeric ID
   customerEmail?: string | null;
 }
