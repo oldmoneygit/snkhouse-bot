@@ -420,7 +420,7 @@ const guardrailsConfig = {
     {
       name: "Hallucination Detection",
       config: {
-        model: "gpt-4o-mini",
+        model: "gpt-4.1-mini",
         knowledge_source: "vs_68ea79eaea4c8191a5f956db7977fedb",
         confidence_threshold: 0.95
       }
@@ -737,7 +737,7 @@ Mensaje del usuario: ${workflowInputAsText}`
 const snkhouseAssistant = new Agent({
   name: "SNKHOUSE Assistant",
   instructions: snkhouseAssistantInstructions,
-  model: "o4-mini",
+  model: "gpt-4.1-mini",
   tools: [
     searchProducts,
     getOrderDetails,
@@ -752,10 +752,10 @@ const snkhouseAssistant = new Agent({
     fileSearch
   ],
   modelSettings: {
-    reasoning: {
-      effort: "medium",
-      summary: "auto"
-    },
+    temperature: 1,
+    topP: 1,
+    parallelToolCalls: true,
+    maxTokens: 2048,
     store: true
   }
 });
