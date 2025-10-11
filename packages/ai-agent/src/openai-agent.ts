@@ -41,6 +41,21 @@ export async function generateWithOpenAI(
     customerEmail: context.customerEmail ?? null,
   };
 
+  console.log('🚀 [OpenAI] Starting OpenAI processing...');
+  console.log('🔑 [OpenAI] Checking API Key...');
+
+  // Validar API Key
+  if (!process.env.OPENAI_API_KEY) {
+    console.error('❌ [OpenAI] OPENAI_API_KEY not found in environment!');
+    throw new Error('OpenAI API Key is missing');
+  }
+
+  if (!process.env.OPENAI_API_KEY.startsWith('sk-')) {
+    console.error('❌ [OpenAI] OPENAI_API_KEY format invalid (should start with sk-)');
+    throw new Error('OpenAI API Key format is invalid');
+  }
+
+  console.log('✅ [OpenAI] API Key found:', process.env.OPENAI_API_KEY.substring(0, 15) + '...');
   console.log('🤖 [OpenAI] Iniciando geração com tools habilitadas...');
   console.log('📊 [OpenAI] Mensagens no histórico:', messages.length);
   console.log('🔧 [OpenAI] Tools disponíveis:', TOOLS_DEFINITIONS.length);
@@ -76,14 +91,46 @@ export async function generateWithOpenAI(
       console.log(`🔄 [OpenAI] Iteração ${iteration}/${maxIterations}`);
 
       const openai = getOpenAIClient();
-      const response = await openai.chat.completions.create({
+
+      console.log('[OpenAI] 🕐 Calling OpenAI API...');
+      console.log('[OpenAI] 📊 Config:', {
         model: finalConfig.model,
-        messages: currentMessages as any,
-        tools: TOOLS_DEFINITIONS as any,
-        tool_choice: 'auto',
+        messagesCount: currentMessages.length,
+        toolsCount: TOOLS_DEFINITIONS.length,
         temperature: finalConfig.temperature,
-        max_tokens: finalConfig.maxTokens,
+        maxTokens: finalConfig.maxTokens,
       });
+
+      let response;
+      try {
+        // Criar promise com timeout de 20 segundos
+        const apiCall = openai.chat.completions.create({
+          model: finalConfig.model,
+          messages: currentMessages as any,
+          tools: TOOLS_DEFINITIONS as any,
+          tool_choice: 'auto',
+          temperature: finalConfig.temperature,
+          max_tokens: finalConfig.maxTokens,
+        });
+
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          setTimeout(() => {
+            reject(new Error('OpenAI API timeout after 20 seconds'));
+          }, 20000);
+        });
+
+        console.log('[OpenAI] ⏳ Waiting for response (20s timeout)...');
+        response = await Promise.race([apiCall, timeoutPromise]);
+        console.log('[OpenAI] ✅ Response received from API!');
+
+      } catch (error: any) {
+        console.error('[OpenAI] ❌ API Call ERROR:', {
+          name: error.name,
+          message: error.message,
+          apiKeyPresent: !!process.env.OPENAI_API_KEY,
+        });
+        throw error; // Re-throw para cair no fallback do agent.ts
+      }
 
       const choice = response.choices[0];
       const finishReason = choice.finish_reason;
