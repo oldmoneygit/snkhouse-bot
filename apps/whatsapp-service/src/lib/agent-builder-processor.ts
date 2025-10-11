@@ -1,4 +1,4 @@
-import { runAgentWorkflow } from '@snkhouse/agent-builder';
+import { runWorkflow } from '@snkhouse/agent-builder';
 import { supabaseAdmin } from '@snkhouse/database';
 // TODO: Re-enable analytics tracking
 // import { analyticsTracker } from '@snkhouse/analytics';
@@ -38,26 +38,46 @@ export async function processMessageWithAgentBuilder({
     }
 
     // Run Agent Builder workflow
-    const result = await runAgentWorkflow({
-      message,
-      conversationId,
-      customerId
+    const result = await runWorkflow({
+      input_as_text: message
     });
 
-    if (!result.success) {
-      throw new Error(result.error || 'Agent failed');
+    // Check if guardrails were triggered (result will have pii/moderation/etc if guardrails failed)
+    if ('pii' in result || 'moderation' in result) {
+      console.warn('⚠️ [Agent Builder Processor] Guardrails triggered');
+
+      // Save guardrails trigger to database
+      try {
+        await supabaseAdmin.from('messages').insert({
+          conversation_id: conversationId,
+          role: 'system',
+          content: 'Guardrails triggered',
+          metadata: {
+            channel: 'whatsapp',
+            guardrails_triggered: true,
+            guardrails_result: result,
+            timestamp: new Date().toISOString()
+          }
+        });
+      } catch (dbError: any) {
+        console.error('⚠️ [Agent Builder Processor] Failed to save guardrails message:', dbError.message);
+      }
+
+      return 'Disculpá, no puedo procesar ese mensaje. ¿Podrías reformularlo de otra manera?';
     }
+
+    // Get the response text (result has output_text if guardrails passed)
+    const responseText = 'output_text' in result ? result.output_text : 'No response';
 
     // Save assistant response to database
     try {
       await supabaseAdmin.from('messages').insert({
         conversation_id: conversationId,
         role: 'assistant',
-        content: result.response,
+        content: responseText,
         metadata: {
           channel: 'whatsapp',
-          execution_time_ms: result.execution_time_ms,
-          guardrails_triggered: result.guardrails_triggered || false,
+          execution_time_ms: Date.now() - startTime,
           timestamp: new Date().toISOString()
         }
       });
@@ -72,7 +92,7 @@ export async function processMessageWithAgentBuilder({
 
     console.log(`✅ [Agent Builder Processor] Processed in ${Date.now() - startTime}ms`);
 
-    return result.response;
+    return responseText;
 
   } catch (error: any) {
     console.error('❌ [Agent Builder Processor] Error:', error);
