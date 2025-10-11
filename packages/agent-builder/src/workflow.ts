@@ -202,7 +202,7 @@ SIEMPRE que el cliente pregunte por productos:
 - Si no encontrás un producto, ofrecé alternativas similares
 - Si el cliente pide tallas, SIEMPRE usá checkStock
 - Mencioná siempre el precio cuando hables de productos`,
-  model: "o1-mini",
+  model: "o4-mini",
   tools: [
     searchProducts,
     checkStock,
