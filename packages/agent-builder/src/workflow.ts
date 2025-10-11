@@ -16,9 +16,9 @@ const searchProducts = tool({
   description: "Busca productos en el catálogo de WooCommerce por palabras clave. Retorna hasta 10 resultados con información básica (nombre, precio, imagen, stock).",
   parameters: z.object({
     query: z.string().describe("Palabra clave para buscar productos (ej: 'nike air max', 'adidas running')"),
-    category: z.string().optional().describe("Categoría opcional (ej: 'hombre', 'mujer', 'deportivo')"),
-    max_price: z.number().optional().describe("Precio máximo en USD"),
-    limit: z.number().optional().default(5).describe("Número máximo de resultados (default: 5, max: 10)")
+    category: z.string().optional().nullable().describe("Categoría opcional (ej: 'hombre', 'mujer', 'deportivo')"),
+    max_price: z.number().optional().nullable().describe("Precio máximo en USD"),
+    limit: z.number().optional().nullable().default(5).describe("Número máximo de resultados (default: 5, max: 10)")
   }),
   execute: async (input, context) => {
     const startTime = Date.now();

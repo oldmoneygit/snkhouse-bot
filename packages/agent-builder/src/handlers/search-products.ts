@@ -2,9 +2,9 @@ import { getWooCommerceClient } from '@snkhouse/integrations';
 
 export interface SearchProductsInput {
   query: string;
-  category?: string;
-  max_price?: number;
-  limit?: number;
+  category?: string | null;
+  max_price?: number | null;
+  limit?: number | null;
 }
 
 export async function searchProductsHandler(input: SearchProductsInput) {
