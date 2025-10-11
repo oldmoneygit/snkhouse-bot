@@ -2,9 +2,21 @@ import Anthropic from '@anthropic-ai/sdk';
 import { ConversationMessage, AgentResponse, AgentConfig } from './types';
 
 function getAnthropicClient() {
-  return new Anthropic({
+  console.log('[Anthropic] 🔧 Creating client with config...');
+
+  const client = new Anthropic({
     apiKey: process.env.ANTHROPIC_API_KEY,
+    maxRetries: 0, // Sem retries para debug
+    timeout: 15000, // 15s timeout
   });
+
+  console.log('[Anthropic] ✅ Client created with:', {
+    apiKeyPresent: !!process.env.ANTHROPIC_API_KEY,
+    maxRetries: 0,
+    timeout: 15000,
+  });
+
+  return client;
 }
 
 const DEFAULT_CONFIG: AgentConfig = {
@@ -52,34 +64,40 @@ export async function generateWithAnthropic(
       messagesCount: anthropicMessages.length,
     });
 
+    // VERSÃO MINIMALISTA - SEM TOOLS, SEM COMPLEXIDADE
+    console.log('[Anthropic] 🧪 MINIMAL MODE: No tools, basic config only');
+    console.log('[Anthropic] ⏳ Calling API...');
+
     let response;
     try {
-      // Timeout de 15 segundos
-      const apiCall = anthropic.messages.create({
-        model: finalConfig.model,
-        max_tokens: finalConfig.maxTokens,
-        temperature: finalConfig.temperature,
-        system: systemPrompt,
-        messages: anthropicMessages as any,
+      const startTime = Date.now();
+
+      // CHAMADA ULTRA SIMPLIFICADA
+      response = await anthropic.messages.create({
+        model: 'claude-3-5-haiku-20241022',
+        max_tokens: 500,
+        messages: [
+          {
+            role: 'user',
+            content: anthropicMessages[anthropicMessages.length - 1]?.content || 'Hola',
+          }
+        ],
+        system: 'Eres un asistente de SNKHOUSE. Responde en español de forma breve y amigable.',
       });
 
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => {
-          reject(new Error('Anthropic API timeout after 15 seconds'));
-        }, 15000);
-      });
-
-      console.log('[Anthropic] ⏳ Waiting for response (15s timeout)...');
-      response = await Promise.race([apiCall, timeoutPromise]);
-      console.log('[Anthropic] ✅ Response received from API!');
+      const duration = Date.now() - startTime;
+      console.log('[Anthropic] ✅ Response received in', duration, 'ms');
 
     } catch (apiError: any) {
-      console.error('[Anthropic] ❌ API Call ERROR:', {
-        name: apiError.name,
-        message: apiError.message,
-        stack: apiError.stack?.substring(0, 200),
+      console.error('[Anthropic] ❌ ERRO COMPLETO:', {
+        name: apiError.name || 'Unknown',
+        message: apiError.message || 'No message',
+        code: apiError.code,
+        status: apiError.status,
+        type: apiError.type,
+        stack: apiError.stack?.split('\n').slice(0, 5),
       });
-      throw apiError;
+      throw new Error('Anthropic API failed: ' + apiError.message);
     }
 
     console.log('[Anthropic] 📊 Response details:', {
