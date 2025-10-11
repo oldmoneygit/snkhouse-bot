@@ -95,7 +95,7 @@ const guardrailsConfig = {
       config: {
         model: "gpt-4o-mini",
         knowledge_source: "vs_68ea79eaea4c8191a5f956db7977fedb",
-        confidence_threshold: 0.7
+        confidence_threshold: 0.95  // Aumentado para ser menos restritivo (0.7 → 0.95)
       }
     }
   ]
