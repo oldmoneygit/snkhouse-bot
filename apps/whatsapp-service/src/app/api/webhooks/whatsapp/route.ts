@@ -150,16 +150,45 @@ async function processIncomingMessage(
   try {
     // Step 1: Get or create customer with detailed error handling
     console.log('[Webhook] 👤 Step 1: Getting/creating customer...');
+    console.log('[Webhook] 🔌 Checking supabaseAdmin client:', {
+      exists: !!supabaseAdmin,
+      type: typeof supabaseAdmin,
+      hasFrom: !!(supabaseAdmin as any)?.from
+    });
+
     let customer;
 
     try {
       const customerStart = Date.now();
 
-      const { data: existingCustomer, error: customerQueryError } = await supabaseAdmin
+      console.log('[Webhook] 🔍 About to query Supabase for customer:', from.substring(0, 8) + '***');
+      console.log('[Webhook] 📊 Supabase URL check:', !!process.env.NEXT_PUBLIC_SUPABASE_URL);
+      console.log('[Webhook] 🔑 Supabase Key check:', !!process.env.SUPABASE_SERVICE_ROLE_KEY);
+
+      if (!supabaseAdmin) {
+        throw new Error('❌ supabaseAdmin is not initialized!');
+      }
+
+      // Query with timeout
+      console.log('[Webhook] 🏗️ Building query...');
+      const queryPromise = supabaseAdmin
         .from('customers')
         .select('*')
         .eq('phone', from)
         .maybeSingle();
+
+      console.log('[Webhook] ✅ Query built, creating timeout promise...');
+
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Customer query timeout after 10 seconds')), 10000)
+      );
+
+      console.log('[Webhook] ⏱️ Starting Promise.race with 10s timeout...');
+
+      const { data: existingCustomer, error: customerQueryError } = await Promise.race([
+        queryPromise,
+        timeoutPromise
+      ]) as any;
 
       console.log('[Webhook] 📊 Customer query result:', {
         duration: Date.now() - customerStart,
@@ -229,7 +258,10 @@ async function processIncomingMessage(
     try {
       const convStart = Date.now();
 
-      const { data: activeConv, error: convQueryError } = await supabaseAdmin
+      console.log('[Webhook] 🔍 About to query conversation for customer:', customer.id);
+
+      // Query with timeout
+      const queryPromise = supabaseAdmin
         .from('conversations')
         .select('*')
         .eq('customer_id', customer.id)
@@ -238,6 +270,17 @@ async function processIncomingMessage(
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
+
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Conversation query timeout after 10 seconds')), 10000)
+      );
+
+      console.log('[Webhook] ⏱️ Starting conversation query with 10s timeout...');
+
+      const { data: activeConv, error: convQueryError } = await Promise.race([
+        queryPromise,
+        timeoutPromise
+      ]) as any;
 
       console.log('[Webhook] 📊 Conversation query result:', {
         duration: Date.now() - convStart,
