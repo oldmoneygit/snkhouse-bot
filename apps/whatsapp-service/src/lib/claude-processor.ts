@@ -74,6 +74,38 @@ export async function processMessageWithClaude({
 
   try {
     // ========================================
+    // STEP 0: Load conversation history from database
+    // ========================================
+    let conversationHistory: any[] = [];
+
+    try {
+      const { data: historyData, error: historyError } = await supabaseAdmin
+        .from('messages')
+        .select('role, content, metadata, created_at')
+        .eq('conversation_id', conversationId)
+        .order('created_at', { ascending: true })
+        .limit(10); // Last 10 messages for context
+
+      if (historyError) {
+        console.error('⚠️ [Claude Processor] Failed to load history:', historyError.message);
+      } else if (historyData && historyData.length > 0) {
+        conversationHistory = historyData
+          .filter((msg: any) => msg.role !== 'system') // Exclude system/error messages
+          .map((msg: any) => ({
+            role: msg.role,
+            content: msg.content
+          }));
+
+        console.log(`📚 [Claude Processor] Loaded ${conversationHistory.length} messages from history`);
+      } else {
+        console.log('📚 [Claude Processor] No conversation history found (new conversation)');
+      }
+    } catch (historyError: any) {
+      console.error('⚠️ [Claude Processor] History loading error:', historyError.message);
+      // Continue without history if loading fails
+    }
+
+    // ========================================
     // STEP 1: Save user message to database
     // ========================================
     try {
@@ -102,6 +134,7 @@ export async function processMessageWithClaude({
       model: anthropic('claude-3-5-haiku-latest'), // Using Haiku - cheapest option ($0.80 vs $3/1M) with great tool calling
       system: SYSTEM_PROMPT,
       messages: [
+        ...conversationHistory, // Include conversation history for context
         {
           role: 'user',
           content: message
@@ -309,6 +342,8 @@ export async function processMessageWithClaude({
       try {
         // Build messages from steps - use step.response.messages which has proper format
         const continueMessages: any[] = [
+          // Conversation history for context
+          ...conversationHistory,
           // Original user message
           {
             role: 'user',
