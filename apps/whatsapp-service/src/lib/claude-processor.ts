@@ -97,6 +97,12 @@ export async function processMessageWithClaude({
           }));
 
         console.log(`📚 [Claude Processor] Loaded ${conversationHistory.length} messages from history`);
+
+        // 🔍 DEBUG: Log history content to verify what's being passed to Claude
+        console.log('🔍 [Claude Processor] History preview (last 3 messages):');
+        conversationHistory.slice(-3).forEach((msg: any, idx: number) => {
+          console.log(`   [${idx + 1}] ${msg.role}: ${msg.content.substring(0, 80)}...`);
+        });
       } else {
         console.log('📚 [Claude Processor] No conversation history found (new conversation)');
       }
