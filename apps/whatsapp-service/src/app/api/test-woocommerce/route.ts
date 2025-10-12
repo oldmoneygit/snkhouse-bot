@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { woocommerce } from '@/lib/woocommerce';
+import { woocommerceClient } from '@/lib/woocommerce';
 
 /**
  * Endpoint de diagnóstico para testar conexão WooCommerce
@@ -24,10 +24,12 @@ export async function GET() {
   try {
     console.log('[WooCommerce Test] Test 1: Listing products...');
 
-    const response = await woocommerce.get('products', {
-      per_page: 3,
-      status: 'publish',
-      _fields: 'id,name,price'
+    const response = await woocommerceClient.get('/products', {
+      params: {
+        per_page: 3,
+        status: 'publish',
+        _fields: 'id,name,price'
+      }
     });
 
     diagnostics.tests.listProducts = {
@@ -58,11 +60,13 @@ export async function GET() {
   try {
     console.log('[WooCommerce Test] Test 2: Searching products...');
 
-    const response = await woocommerce.get('products', {
-      search: 'jordan',
-      per_page: 3,
-      status: 'publish',
-      _fields: 'id,name,price,stock_status'
+    const response = await woocommerceClient.get('/products', {
+      params: {
+        search: 'jordan',
+        per_page: 3,
+        status: 'publish',
+        _fields: 'id,name,price,stock_status'
+      }
     });
 
     diagnostics.tests.searchProducts = {

@@ -1,7 +1,7 @@
 import { anthropic } from '@ai-sdk/anthropic';
 import { generateText } from 'ai';
 import { z } from 'zod';
-import { woocommerce } from './woocommerce';
+import { woocommerceClient } from './woocommerce';
 import { supabaseAdmin } from '@snkhouse/database';
 
 /**
@@ -119,11 +119,13 @@ export async function processMessageWithClaude({
             console.log(`[Claude Tool] searchProducts: "${query}", limit: ${limit}`);
 
             try {
-              const response = await woocommerce.get('products', {
-                search: query,
-                per_page: limit,
-                status: 'publish',
-                _fields: 'id,name,price,images,stock_status,permalink'
+              const response = await woocommerceClient.get('/products', {
+                params: {
+                  search: query,
+                  per_page: limit,
+                  status: 'publish',
+                  _fields: 'id,name,price,images,stock_status,permalink'
+                }
               });
 
               const products = response.data.map((p: any) => ({
@@ -166,7 +168,7 @@ export async function processMessageWithClaude({
 
             try {
               // Fetch order from WooCommerce
-              const response = await woocommerce.get(`orders/${order_id}`);
+              const response = await woocommerceClient.get(`/orders/${order_id}`);
               const order = response.data;
 
               // 🔒 CRITICAL: Validate ownership (security)
@@ -244,7 +246,7 @@ export async function processMessageWithClaude({
             console.log(`[Claude Tool] checkProductStock: product_id=${product_id}, size=${size || 'N/A'}`);
 
             try {
-              const response = await woocommerce.get(`products/${product_id}`);
+              const response = await woocommerceClient.get(`/products/${product_id}`);
               const product = response.data;
 
               const stockInfo = {
