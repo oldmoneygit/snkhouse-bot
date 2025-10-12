@@ -48,11 +48,11 @@ const updateShippingAddress = tool({
     order_id: z.string(),
     customer_email: z.string(),
     new_address: z.object({
-      address_1: z.string().optional(),
-      address_2: z.string().optional(),
-      city: z.string().optional(),
-      state: z.string().optional(),
-      postcode: z.string().optional()
+      address_1: z.string(),
+      address_2: z.string(),
+      city: z.string(),
+      state: z.string(),
+      postcode: z.string()
     })
   }),
   execute: async (input: {order_id: string, customer_email: string, new_address: object}) => {
