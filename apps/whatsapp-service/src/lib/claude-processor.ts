@@ -83,7 +83,7 @@ export async function processMessageWithClaude({
         .from('messages')
         .select('role, content, metadata, created_at')
         .eq('conversation_id', conversationId)
-        .order('created_at', { ascending: true })
+        .order('created_at', { ascending: false }) // Get LATEST messages first
         .limit(10); // Last 10 messages for context
 
       if (historyError) {
@@ -91,6 +91,7 @@ export async function processMessageWithClaude({
       } else if (historyData && historyData.length > 0) {
         conversationHistory = historyData
           .filter((msg: any) => msg.role !== 'system') // Exclude system/error messages
+          .reverse() // Reverse to chronological order (oldest first)
           .map((msg: any) => ({
             role: msg.role,
             content: msg.content
