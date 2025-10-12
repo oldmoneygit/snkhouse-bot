@@ -307,10 +307,44 @@ export async function processMessageWithClaude({
       console.log('🔄 [Claude Processor] Tool calls detected, continuing to generate response with results...');
 
       try {
-        // Build messages array from steps - this is the correct format
-        const continueMessages = result.steps
-          .flatMap((step: any) => step.messages || [])
-          .filter((m: any) => m !== undefined && m !== null);
+        // DEBUG: Log steps structure to understand format
+        console.log('🔍 [Claude Processor] Steps structure:', JSON.stringify(result.steps, null, 2));
+
+        // Build messages manually from the original user message + tool calls + tool results
+        const continueMessages: any[] = [
+          // Original user message
+          {
+            role: 'user',
+            content: message
+          },
+          // Assistant message with tool calls
+          {
+            role: 'assistant',
+            content: [
+              // Include any text generated before tool call
+              ...(result.text ? [{ type: 'text', text: result.text }] : []),
+              // Include tool calls
+              ...result.toolCalls.map((tc: any) => ({
+                type: 'tool-call',
+                toolCallId: tc.toolCallId,
+                toolName: tc.toolName,
+                args: tc.args
+              }))
+            ]
+          },
+          // Tool results
+          ...result.toolResults.map((tr: any) => ({
+            role: 'tool',
+            content: [
+              {
+                type: 'tool-result',
+                toolCallId: tr.toolCallId,
+                toolName: tr.toolName,
+                result: tr.result
+              }
+            ]
+          }))
+        ];
 
         console.log('🔍 [Claude Processor] Continue messages:', {
           count: continueMessages.length,
