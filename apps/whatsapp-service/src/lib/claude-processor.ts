@@ -99,6 +99,7 @@ export async function processMessageWithClaude({
     const result = await generateText({
       model: anthropic('claude-3-5-haiku-latest'), // Using Haiku - cheapest option ($0.80 vs $3/1M) with great tool calling
       system: SYSTEM_PROMPT,
+      maxSteps: 5, // Allow Claude to use tools AND generate response text
       messages: [
         {
           role: 'user',
