@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { woocommerce, verifyApiKey } from '@/lib/woocommerce';
+import { woocommerceClient, verifyApiKey } from '@/lib/woocommerce';
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,9 +13,11 @@ export async function POST(request: NextRequest) {
     console.log('[get-customer-orders] Fetching orders for:', customer_email);
 
     // Search customer
-    const customerResponse = await woocommerce.get('customers', {
-      email: customer_email,
-      per_page: 1
+    const customerResponse = await woocommerceClient.get('/customers', {
+      params: {
+        email: customer_email,
+        per_page: 1
+      }
     });
 
     if (customerResponse.data.length === 0) {
@@ -40,7 +42,7 @@ export async function POST(request: NextRequest) {
       params.status = status;
     }
 
-    const ordersResponse = await woocommerce.get('orders', params);
+    const ordersResponse = await woocommerceClient.get('/orders', { params });
     const orders = ordersResponse.data;
 
     // Format response

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { woocommerce, verifyApiKey } from '@/lib/woocommerce';
+import { woocommerceClient, verifyApiKey } from '@/lib/woocommerce';
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
     console.log('[check-product-stock] Checking stock for:', product_id, 'size:', size);
 
     // Get product
-    const response = await woocommerce.get(`products/${product_id}`);
+    const response = await woocommerceClient.get(`/products/${product_id}`);
     const product = response.data;
 
     let stockInfo: any = {
@@ -27,8 +27,10 @@ export async function POST(request: NextRequest) {
     // Check if product is variable (has variations with sizes)
     if (product.type === 'variable' && product.variations && product.variations.length > 0) {
       // Get all variations
-      const variationsResponse = await woocommerce.get(`products/${product_id}/variations`, {
-        per_page: 100
+      const variationsResponse = await woocommerceClient.get(`/products/${product_id}/variations`, {
+        params: {
+          per_page: 100
+        }
       });
 
       const variations = variationsResponse.data;

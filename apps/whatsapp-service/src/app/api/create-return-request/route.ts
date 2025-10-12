@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { woocommerce, verifyApiKey } from '@/lib/woocommerce';
+import { woocommerceClient, verifyApiKey } from '@/lib/woocommerce';
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
     console.log('[create-return-request] Creating return for order:', order_id);
 
     // Get order
-    const response = await woocommerce.get(`orders/${order_id}`);
+    const response = await woocommerceClient.get(`/orders/${order_id}`);
     const order = response.data;
 
     // Verify customer email
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
       customer_note: false
     };
 
-    await woocommerce.post(`orders/${order_id}/notes`, note);
+    await woocommerceClient.post(`/orders/${order_id}/notes`, note);
 
     // Update order meta_data to mark return request
     const updateData = {
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
       ]
     };
 
-    await woocommerce.put(`orders/${order_id}`, updateData);
+    await woocommerceClient.put(`/orders/${order_id}`, updateData);
 
     console.log('[create-return-request] Return request created successfully');
 

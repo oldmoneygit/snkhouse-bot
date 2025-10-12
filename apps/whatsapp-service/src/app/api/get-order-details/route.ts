@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { woocommerce, verifyApiKey } from '@/lib/woocommerce';
+import { woocommerceClient, verifyApiKey } from '@/lib/woocommerce';
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
     console.log('[get-order-details] Fetching order:', order_id, 'for:', customer_email);
 
     // Get order
-    const response = await woocommerce.get(`orders/${order_id}`);
+    const response = await woocommerceClient.get(`/orders/${order_id}`);
     const order = response.data;
 
     // Verify customer email

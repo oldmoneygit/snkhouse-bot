@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { woocommerce, verifyApiKey } from '@/lib/woocommerce';
+import { woocommerceClient, verifyApiKey } from '@/lib/woocommerce';
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Search products
-    const response = await woocommerce.get('products', params);
+    const response = await woocommerceClient.get('/products', { params });
     const products = response.data;
 
     // Format response

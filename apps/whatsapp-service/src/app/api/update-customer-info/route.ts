@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { woocommerce, verifyApiKey } from '@/lib/woocommerce';
+import { woocommerceClient, verifyApiKey } from '@/lib/woocommerce';
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,9 +13,11 @@ export async function POST(request: NextRequest) {
     console.log('[update-customer-info] Updating customer:', current_email);
 
     // Search customer by email
-    const searchResponse = await woocommerce.get('customers', {
-      email: current_email,
-      per_page: 1
+    const searchResponse = await woocommerceClient.get('/customers', {
+      params: {
+        email: current_email,
+        per_page: 1
+      }
     });
 
     if (searchResponse.data.length === 0) {
@@ -49,7 +51,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update customer
-    const updateResponse = await woocommerce.put(`customers/${customerId}`, updateData);
+    const updateResponse = await woocommerceClient.put(`/customers/${customerId}`, updateData);
 
     console.log('[update-customer-info] Customer updated successfully');
 

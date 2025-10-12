@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { woocommerce, verifyApiKey } from '@/lib/woocommerce';
+import { woocommerceClient, verifyApiKey } from '@/lib/woocommerce';
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
       order: 'desc'
     };
 
-    const response = await woocommerce.get('coupons', params);
+    const response = await woocommerceClient.get('/coupons', { params });
     const coupons = response.data;
 
     // Filter active coupons (not expired)
