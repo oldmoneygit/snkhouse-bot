@@ -305,31 +305,15 @@ export async function processMessageWithClaude({
     if (result.finishReason === 'tool-calls' && result.toolResults && result.toolResults.length > 0) {
       console.log('🔄 [Claude Processor] Tool calls detected, continuing generation...');
 
-      // Build messages array with tool results
-      const continueMessages: any[] = [
-        {
-          role: 'user',
-          content: message
-        },
-        {
-          role: 'assistant',
-          content: result.toolCalls.map((tc: any) => ({
-            type: 'tool-use',
-            id: tc.toolCallId,
-            name: tc.toolName,
-            input: tc.args
-          }))
-        },
-        {
-          role: 'user',
-          content: result.toolResults.map((tr: any) => ({
-            type: 'tool-result',
-            toolCallId: tr.toolCallId,
-            toolName: tr.toolName,
-            result: tr.result
-          }))
-        }
+      // Build messages array from steps - this is the correct format
+      const continueMessages = [
+        ...result.steps.flatMap((step: any) => step.messages)
       ];
+
+      console.log('🔍 [Claude Processor] Continue messages:', {
+        count: continueMessages.length,
+        types: continueMessages.map((m: any) => m.role)
+      });
 
       // Continue generation with tool results
       const continueResult = await generateText({
