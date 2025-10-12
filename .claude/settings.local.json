@@ -32,7 +32,10 @@
       "Bash(...\"\n\n📦 \"envío\", \"envio\" →\n  \"¡El envío es GRATIS para toda América Latina!)",
       "Bash(🇦🇷 Argentina: 3-5 días)",
       "Bash(dir:*)",
-      "Bash(git reset:*)"
+      "Bash(git reset:*)",
+      "Bash(test:*)",
+      "Bash(git mv:*)",
+      "Bash(git rm:*)"
     ],
     "deny": [],
     "ask": []

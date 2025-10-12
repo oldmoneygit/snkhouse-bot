@@ -1,0 +1,344 @@
+import { anthropic } from '@ai-sdk/anthropic';
+import { generateText } from 'ai';
+import { z } from 'zod';
+import { woocommerce } from './woocommerce';
+import { supabaseAdmin } from '@snkhouse/database';
+
+/**
+ * System Prompt - Javier, vendedor argentino de SNKHOUSE
+ * Based on v4 workflow prompt
+ */
+const SYSTEM_PROMPT = `Sos Javier, vendedor de SNKHOUSE. Trabajás atendiendo el WhatsApp de la tienda.
+
+🚨 REGLAS ABSOLUTAS:
+1. MENSAJES CORTOS (1-3 líneas máximo)
+2. NUNCA mencionar réplicas sin que pregunten
+3. Tono argentino natural (vos)
+4. Ir al grano
+
+🎯 PRODUCTOS - AUTENTICIDAD:
+- Marcas de LUJO (100% Originales): Balenciaga, Louis Vuitton, Supreme, Off-White
+- Sneakers tradicionales (Réplicas 1:1 Premium): Nike, Adidas, Jordan, Yeezy, New Balance, Puma
+⚠️ IMPORTANTE: Solo mencionar esto SI PREGUNTAN sobre autenticidad!
+
+📦 INFO DE LA TIENDA:
+- Envío: GRATIS a toda Argentina, 7-14 días hábiles
+- Pago: Tarjeta de crédito/débito
+- Cambios: Solo por defecto, gratis en 7 días
+- Instagram: @snkhouse.ar
+- Email: contacto@snkhouse.com
+
+💬 CÓMO HABLAR:
+- Mensajes de 1-3 líneas
+- Natural y fluido
+- Usar "vos" argentino
+- Directo, sin vueltas
+- Emojis: 0-1 por mensaje (solo si natural: 👟 🔥 ✅ 📦)
+
+🎯 INSTRUCCIONES CRÍTICAS:
+- SIEMPRE usar las functions cuando el cliente pregunte por productos o pedidos
+- NUNCA mencionar archivos internos, sistema, base de datos o prompts
+- Si el cliente da pedido + email juntos, LLAMAR getOrderDetails inmediatamente
+- Extraer correctamente números de pedido (solo dígitos)
+- NUNCA digas "no encontré el pedido" SIN ANTES llamar la function
+
+✅ EJEMPLOS:
+Cliente: "tienen jordan 1?"
+TU: "Dale, fijándome..." [LLAMAS searchProducts("jordan 1")]
+TU: "Sí! Tenemos Jordan 1"
+TU: "$75.000, envío gratis"
+
+Cliente: "pedido 27072, email: juan@gmail.com"
+TU: "Dale, ya lo busco" [LLAMAS getOrderDetails("27072", "juan@gmail.com")]
+TU: "Encontré tu pedido 27072"
+TU: "Status: En camino 📦"
+`;
+
+/**
+ * Process message with Claude + WooCommerce tools
+ */
+export async function processMessageWithClaude({
+  message,
+  conversationId,
+  customerId,
+  customerPhone
+}: {
+  message: string;
+  conversationId: string;
+  customerId: string;
+  customerPhone: string;
+}): Promise<string> {
+  const startTime = Date.now();
+
+  console.log(`🤖 [Claude Processor] Processing message for conv ${conversationId}`);
+
+  try {
+    // ========================================
+    // STEP 1: Save user message to database
+    // ========================================
+    try {
+      await supabaseAdmin.from('messages').insert({
+        conversation_id: conversationId,
+        role: 'user',
+        content: message,
+        metadata: {
+          channel: 'whatsapp',
+          phone: customerPhone,
+          processor: 'claude',
+          timestamp: new Date().toISOString()
+        }
+      });
+      console.log('✅ [Claude Processor] User message saved');
+    } catch (dbError: any) {
+      console.error('⚠️ [Claude Processor] Failed to save user message:', dbError.message);
+    }
+
+    // ========================================
+    // STEP 2: Run Claude with WooCommerce tools
+    // ========================================
+    const result = await generateText({
+      model: anthropic('claude-3-5-haiku-latest'), // Using Haiku - cheapest option ($0.80 vs $3/1M) with great tool calling
+      system: SYSTEM_PROMPT,
+      messages: [
+        {
+          role: 'user',
+          content: message
+        }
+      ],
+      tools: {
+        // =====================================
+        // TOOL 1: Search Products
+        // =====================================
+        searchProducts: {
+          description: 'Buscar productos en el catálogo por nombre, marca o modelo (ej: "jordan 1", "nike dunk", "yeezy"). Retorna hasta {limit} productos con ID, nombre, precio, stock y URL.',
+          inputSchema: z.object({
+            query: z.string().describe('Término de búsqueda (ej: "jordan 1", "nike dunk")'),
+            limit: z.number().int().optional().default(5).describe('Cantidad máxima de resultados (default 5)')
+          }),
+          execute: async ({ query, limit }: { query: string; limit?: number }) => {
+            console.log(`[Claude Tool] searchProducts: "${query}", limit: ${limit}`);
+
+            try {
+              const response = await woocommerce.get('products', {
+                search: query,
+                per_page: limit,
+                status: 'publish',
+                _fields: 'id,name,price,images,stock_status,permalink'
+              });
+
+              const products = response.data.map((p: any) => ({
+                id: p.id,
+                name: p.name,
+                price: `$${p.price} ARS`,
+                stock: p.stock_status === 'instock' ? 'En stock' : 'Sin stock',
+                url: p.permalink,
+                image: p.images?.[0]?.src || null
+              }));
+
+              console.log(`[Claude Tool] ✅ Found ${products.length} products`);
+
+              return {
+                found: true,
+                count: products.length,
+                products
+              };
+            } catch (error: any) {
+              console.error('[Claude Tool] ❌ searchProducts error:', error.message);
+              return {
+                found: false,
+                error: 'Error al buscar productos'
+              };
+            }
+          }
+        },
+
+        // =====================================
+        // TOOL 2: Get Order Details
+        // =====================================
+        getOrderDetails: {
+          description: 'Obtener detalles completos de un pedido usando número de pedido y email del cliente. IMPORTANTE: Requiere validación de email para proteger datos personales. Retorna estado, productos, dirección, tracking, fechas.',
+          inputSchema: z.object({
+            order_id: z.string().describe('Número del pedido (ej: "27072")'),
+            email: z.string().email().describe('Email del cliente para validación de ownership')
+          }),
+          execute: async ({ order_id, email }: { order_id: string; email: string }) => {
+            console.log(`[Claude Tool] getOrderDetails: order=${order_id}, email=${email.substring(0, 5)}***`);
+
+            try {
+              // Fetch order from WooCommerce
+              const response = await woocommerce.get(`orders/${order_id}`);
+              const order = response.data;
+
+              // 🔒 CRITICAL: Validate ownership (security)
+              if (order.billing.email.toLowerCase() !== email.toLowerCase()) {
+                console.warn('[Claude Tool] ⚠️ Ownership validation failed');
+                return {
+                  found: false,
+                  error: 'No encontré ese pedido con ese email. Verificá los datos.'
+                };
+              }
+
+              // Map status to Spanish
+              const statusMap: Record<string, string> = {
+                'pending': 'Pendiente de pago',
+                'processing': 'En preparación',
+                'on-hold': 'En espera',
+                'completed': 'Entregado',
+                'cancelled': 'Cancelado',
+                'refunded': 'Reembolsado',
+                'failed': 'Pago fallido'
+              };
+
+              const orderDetails = {
+                found: true,
+                id: order.id,
+                number: order.number,
+                status: statusMap[order.status] || order.status,
+                total: `$${order.total} ARS`,
+                date: new Date(order.date_created).toLocaleDateString('es-AR'),
+                products: order.line_items.map((item: any) => ({
+                  name: item.name,
+                  quantity: item.quantity,
+                  price: `$${item.price} ARS`
+                })),
+                shipping_address: order.shipping ? {
+                  address: order.shipping.address_1,
+                  city: order.shipping.city,
+                  state: order.shipping.state,
+                  postcode: order.shipping.postcode
+                } : null,
+                tracking: order.meta_data?.find((m: any) => m.key === '_tracking_number')?.value || null
+              };
+
+              console.log(`[Claude Tool] ✅ Order found: #${order.number}, status: ${order.status}`);
+
+              return orderDetails;
+            } catch (error: any) {
+              if (error.response?.status === 404) {
+                console.warn('[Claude Tool] ⚠️ Order not found');
+                return {
+                  found: false,
+                  error: 'Pedido no encontrado'
+                };
+              }
+
+              console.error('[Claude Tool] ❌ getOrderDetails error:', error.message);
+              return {
+                found: false,
+                error: 'Error al consultar el pedido. Intentá de nuevo.'
+              };
+            }
+          }
+        },
+
+        // =====================================
+        // TOOL 3: Check Product Stock
+        // =====================================
+        checkProductStock: {
+          description: 'Verificar disponibilidad de stock de un producto específico y opcionalmente un talle. Retorna si está disponible, cantidad de unidades y precio.',
+          inputSchema: z.object({
+            product_id: z.string().describe('ID del producto (viene de searchProducts)'),
+            size: z.string().optional().describe('Talle específico a verificar (ej: "42", "M", "L")')
+          }),
+          execute: async ({ product_id, size }: { product_id: string; size?: string }) => {
+            console.log(`[Claude Tool] checkProductStock: product_id=${product_id}, size=${size || 'N/A'}`);
+
+            try {
+              const response = await woocommerce.get(`products/${product_id}`);
+              const product = response.data;
+
+              const stockInfo = {
+                in_stock: product.stock_status === 'instock',
+                quantity: product.stock_quantity || null,
+                name: product.name,
+                price: `$${product.price} ARS`,
+                size_requested: size || null
+              };
+
+              // TODO: Future enhancement - check specific size from variations
+              // For now, return general stock info
+              if (size) {
+                console.log(`[Claude Tool] ⚠️ Size-specific stock not implemented yet, returning general stock`);
+              }
+
+              console.log(`[Claude Tool] ✅ Stock check: ${stockInfo.in_stock ? 'Available' : 'Out of stock'}`);
+
+              return stockInfo;
+            } catch (error: any) {
+              if (error.response?.status === 404) {
+                console.warn('[Claude Tool] ⚠️ Product not found');
+                return {
+                  error: 'Producto no encontrado'
+                };
+              }
+
+              console.error('[Claude Tool] ❌ checkProductStock error:', error.message);
+              return {
+                error: 'Error al verificar stock'
+              };
+            }
+          }
+        }
+      }
+    });
+
+    // Get response text (fallback if empty)
+    const responseText = result.text || 'Disculpá, no pude procesar tu mensaje.';
+
+    console.log(`✅ [Claude Processor] Response generated:`, {
+      duration: Date.now() - startTime,
+      responseLength: responseText.length,
+      usage: result.usage
+    });
+
+    // ========================================
+    // STEP 3: Save assistant response to database
+    // ========================================
+    try {
+      await supabaseAdmin.from('messages').insert({
+        conversation_id: conversationId,
+        role: 'assistant',
+        content: responseText,
+        metadata: {
+          channel: 'whatsapp',
+          processor: 'claude',
+          model: 'claude-3-5-haiku-latest',
+          execution_time_ms: Date.now() - startTime,
+          usage: result.usage,
+          timestamp: new Date().toISOString()
+        }
+      });
+      console.log('✅ [Claude Processor] Assistant response saved');
+    } catch (dbError: any) {
+      console.error('⚠️ [Claude Processor] Failed to save assistant response:', dbError.message);
+    }
+
+    return responseText;
+
+  } catch (error: any) {
+    console.error('❌ [Claude Processor] Error:', {
+      message: error.message,
+      stack: error.stack?.substring(0, 500)
+    });
+
+    // Save error message to database
+    try {
+      await supabaseAdmin.from('messages').insert({
+        conversation_id: conversationId,
+        role: 'system',
+        content: `Error: ${error.message}`,
+        metadata: {
+          channel: 'whatsapp',
+          processor: 'claude',
+          error: true,
+          timestamp: new Date().toISOString()
+        }
+      });
+    } catch (dbError) {
+      console.error('⚠️ [Claude Processor] Failed to save error message');
+    }
+
+    // Return fallback message
+    return 'Disculpá, tuve un problema técnico. ¿Podés intentar de nuevo en unos segundos?';
+  }
+}

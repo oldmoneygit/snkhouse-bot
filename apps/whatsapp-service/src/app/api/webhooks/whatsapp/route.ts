@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-// UPDATED: Using Agent Builder processor instead of old message-processor
+// UPDATED: Using Claude processor (with OpenAI Agent Builder fallback)
+import { processMessageWithClaude } from '@/lib/claude-processor';
 import { processMessageWithAgentBuilder } from '@/lib/agent-builder-processor';
 // import { processIncomingWhatsAppMessage } from '@/lib/message-processor'; // OLD - Keep for rollback
 import type { WebhookPayload } from '@/lib/types';
@@ -411,26 +412,43 @@ async function processIncomingMessage(
       return;
     }
 
-    // Step 3: Process with Agent Builder
-    console.log('[Webhook] 🤖 Step 3: Processing with Agent Builder...');
+    // Step 3: Process with Claude or Agent Builder (based on flag)
+    const USE_CLAUDE = process.env.USE_CLAUDE_PROCESSOR === 'true';
+    console.log(`[Webhook] 🤖 Step 3: Processing with ${USE_CLAUDE ? 'Claude' : 'OpenAI Agent Builder'}...`);
     let response: string;
 
     try {
       const agentStart = Date.now();
 
-      response = await processMessageWithAgentBuilder({
-        message: messageText,
-        conversationId: conversation.id,
-        customerId: customer.id,
-        customerPhone: from
-      });
+      if (USE_CLAUDE) {
+        // Use Claude processor (new)
+        response = await processMessageWithClaude({
+          message: messageText,
+          conversationId: conversation.id,
+          customerId: customer.id,
+          customerPhone: from
+        });
 
-      console.log('[Webhook] ✅ Agent Builder response ready:', {
-        duration: Date.now() - agentStart,
-        responseLength: response.length
-      });
+        console.log('[Webhook] ✅ Claude response ready:', {
+          duration: Date.now() - agentStart,
+          responseLength: response.length
+        });
+      } else {
+        // Use OpenAI Agent Builder (fallback)
+        response = await processMessageWithAgentBuilder({
+          message: messageText,
+          conversationId: conversation.id,
+          customerId: customer.id,
+          customerPhone: from
+        });
+
+        console.log('[Webhook] ✅ Agent Builder response ready:', {
+          duration: Date.now() - agentStart,
+          responseLength: response.length
+        });
+      }
     } catch (agentError: any) {
-      console.error('[Webhook] ❌ Agent Builder failed:', {
+      console.error(`[Webhook] ❌ ${USE_CLAUDE ? 'Claude' : 'Agent Builder'} failed:`, {
         error: agentError.message,
         stack: agentError.stack?.substring(0, 500)
       });
