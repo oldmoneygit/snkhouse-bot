@@ -94,9 +94,11 @@ export async function processMessageWithClaude({
     }
 
     // ========================================
-    // STEP 2: Run Claude with WooCommerce tools
+    // STEP 2: Run Claude with WooCommerce tools (with continuation loop)
     // ========================================
-    const result = await generateText({
+
+    // First call - may return tool calls
+    let result = await generateText({
       model: anthropic('claude-3-5-haiku-latest'), // Using Haiku - cheapest option ($0.80 vs $3/1M) with great tool calling
       system: SYSTEM_PROMPT,
       messages: [
@@ -285,7 +287,7 @@ export async function processMessageWithClaude({
     });
 
     // DEBUG: Log the full result object to understand what's happening
-    console.log('🔍 [Claude Processor] DEBUG result:', {
+    console.log('🔍 [Claude Processor] DEBUG result (first call):', {
       hasText: !!result.text,
       textLength: result.text?.length || 0,
       textPreview: result.text?.substring(0, 100) || 'EMPTY',
@@ -295,8 +297,62 @@ export async function processMessageWithClaude({
       steps: result.steps?.length || 0
     });
 
-    // Get response text (fallback if empty)
-    const responseText = result.text || 'Disculpá, no pude procesar tu mensaje.';
+    // ========================================
+    // STEP 2.5: Continue if tools were called (continuation loop)
+    // ========================================
+    let responseText = result.text;
+
+    if (result.finishReason === 'tool-calls' && result.toolResults && result.toolResults.length > 0) {
+      console.log('🔄 [Claude Processor] Tool calls detected, continuing generation...');
+
+      // Build messages array with tool results
+      const continueMessages: any[] = [
+        {
+          role: 'user',
+          content: message
+        },
+        {
+          role: 'assistant',
+          content: result.toolCalls.map((tc: any) => ({
+            type: 'tool-use',
+            id: tc.toolCallId,
+            name: tc.toolName,
+            input: tc.args
+          }))
+        },
+        {
+          role: 'user',
+          content: result.toolResults.map((tr: any) => ({
+            type: 'tool-result',
+            toolCallId: tr.toolCallId,
+            toolName: tr.toolName,
+            result: tr.result
+          }))
+        }
+      ];
+
+      // Continue generation with tool results
+      const continueResult = await generateText({
+        model: anthropic('claude-3-5-haiku-latest'),
+        system: SYSTEM_PROMPT,
+        messages: continueMessages
+      });
+
+      console.log('🔍 [Claude Processor] DEBUG result (after continuation):', {
+        hasText: !!continueResult.text,
+        textLength: continueResult.text?.length || 0,
+        textPreview: continueResult.text?.substring(0, 100),
+        finishReason: continueResult.finishReason
+      });
+
+      // Use text from continuation
+      responseText = continueResult.text;
+    }
+
+    // Fallback if still empty
+    if (!responseText) {
+      responseText = 'Disculpá, no pude procesar tu mensaje.';
+    }
 
     console.log(`✅ [Claude Processor] Response generated:`, {
       duration: Date.now() - startTime,
