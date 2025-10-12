@@ -99,7 +99,6 @@ export async function processMessageWithClaude({
     const result = await generateText({
       model: anthropic('claude-3-5-haiku-latest'), // Using Haiku - cheapest option ($0.80 vs $3/1M) with great tool calling
       system: SYSTEM_PROMPT,
-      maxSteps: 5, // Allow Claude to use tools AND generate response text
       messages: [
         {
           role: 'user',
@@ -283,6 +282,17 @@ export async function processMessageWithClaude({
           }
         }
       }
+    });
+
+    // DEBUG: Log the full result object to understand what's happening
+    console.log('🔍 [Claude Processor] DEBUG result:', {
+      hasText: !!result.text,
+      textLength: result.text?.length || 0,
+      textPreview: result.text?.substring(0, 100) || 'EMPTY',
+      finishReason: result.finishReason,
+      toolCalls: result.toolCalls?.length || 0,
+      toolResults: result.toolResults?.length || 0,
+      steps: result.steps?.length || 0
     });
 
     // Get response text (fallback if empty)
