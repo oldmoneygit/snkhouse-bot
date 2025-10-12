@@ -298,39 +298,45 @@ export async function processMessageWithClaude({
     });
 
     // ========================================
-    // STEP 2.5: Continue if tools were called (continuation loop)
+    // STEP 2.5: Continue if tools were called AND no text was generated
     // ========================================
     let responseText = result.text;
 
-    if (result.finishReason === 'tool-calls' && result.toolResults && result.toolResults.length > 0) {
-      console.log('🔄 [Claude Processor] Tool calls detected, continuing generation...');
+    // If we have tool calls but NO text, continue generation
+    if (result.finishReason === 'tool-calls' && !result.text && result.toolResults && result.toolResults.length > 0) {
+      console.log('🔄 [Claude Processor] Tool calls detected without text, continuing generation...');
 
-      // Build messages array from steps - this is the correct format
-      const continueMessages = [
-        ...result.steps.flatMap((step: any) => step.messages)
-      ];
+      try {
+        // Build messages array from steps - this is the correct format
+        const continueMessages = result.steps
+          .flatMap((step: any) => step.messages || [])
+          .filter((m: any) => m !== undefined && m !== null);
 
-      console.log('🔍 [Claude Processor] Continue messages:', {
-        count: continueMessages.length,
-        types: continueMessages.map((m: any) => m.role)
-      });
+        console.log('🔍 [Claude Processor] Continue messages:', {
+          count: continueMessages.length,
+          types: continueMessages.map((m: any) => m?.role || 'unknown')
+        });
 
-      // Continue generation with tool results
-      const continueResult = await generateText({
-        model: anthropic('claude-3-5-haiku-latest'),
-        system: SYSTEM_PROMPT,
-        messages: continueMessages
-      });
+        // Continue generation with tool results
+        const continueResult = await generateText({
+          model: anthropic('claude-3-5-haiku-latest'),
+          system: SYSTEM_PROMPT,
+          messages: continueMessages
+        });
 
-      console.log('🔍 [Claude Processor] DEBUG result (after continuation):', {
-        hasText: !!continueResult.text,
-        textLength: continueResult.text?.length || 0,
-        textPreview: continueResult.text?.substring(0, 100),
-        finishReason: continueResult.finishReason
-      });
+        console.log('🔍 [Claude Processor] DEBUG result (after continuation):', {
+          hasText: !!continueResult.text,
+          textLength: continueResult.text?.length || 0,
+          textPreview: continueResult.text?.substring(0, 100),
+          finishReason: continueResult.finishReason
+        });
 
-      // Use text from continuation
-      responseText = continueResult.text;
+        // Use text from continuation
+        responseText = continueResult.text;
+      } catch (continueError: any) {
+        console.error('⚠️ [Claude Processor] Continuation failed:', continueError.message);
+        // responseText will remain as result.text (which should be empty)
+      }
     }
 
     // Fallback if still empty
