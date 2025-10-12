@@ -307,43 +307,15 @@ export async function processMessageWithClaude({
       console.log('🔄 [Claude Processor] Tool calls detected, continuing to generate response with results...');
 
       try {
-        // DEBUG: Log steps structure to understand format
-        console.log('🔍 [Claude Processor] Steps structure:', JSON.stringify(result.steps, null, 2));
-
-        // Build messages manually from the original user message + tool calls + tool results
+        // Build messages from steps - use step.response.messages which has proper format
         const continueMessages: any[] = [
           // Original user message
           {
             role: 'user',
             content: message
           },
-          // Assistant message with tool calls
-          {
-            role: 'assistant',
-            content: [
-              // Include any text generated before tool call
-              ...(result.text ? [{ type: 'text', text: result.text }] : []),
-              // Include tool calls
-              ...result.toolCalls.map((tc: any) => ({
-                type: 'tool-call',
-                toolCallId: tc.toolCallId,
-                toolName: tc.toolName,
-                args: tc.args
-              }))
-            ]
-          },
-          // Tool results
-          ...result.toolResults.map((tr: any) => ({
-            role: 'tool',
-            content: [
-              {
-                type: 'tool-result',
-                toolCallId: tr.toolCallId,
-                toolName: tr.toolName,
-                result: tr.result
-              }
-            ]
-          }))
+          // Messages from the step response (assistant + tool) - already properly formatted by SDK
+          ...result.steps.flatMap((step: any) => step.response?.messages || [])
         ];
 
         console.log('🔍 [Claude Processor] Continue messages:', {
