@@ -298,13 +298,13 @@ export async function processMessageWithClaude({
     });
 
     // ========================================
-    // STEP 2.5: Continue if tools were called AND no text was generated
+    // STEP 2.5: Continue if tools were called to get final response with results
     // ========================================
     let responseText = result.text;
 
-    // If we have tool calls but NO text, continue generation
-    if (result.finishReason === 'tool-calls' && !result.text && result.toolResults && result.toolResults.length > 0) {
-      console.log('🔄 [Claude Processor] Tool calls detected without text, continuing generation...');
+    // If we have tool calls, ALWAYS continue to get response with tool results
+    if (result.finishReason === 'tool-calls' && result.toolResults && result.toolResults.length > 0) {
+      console.log('🔄 [Claude Processor] Tool calls detected, continuing to generate response with results...');
 
       try {
         // Build messages array from steps - this is the correct format
