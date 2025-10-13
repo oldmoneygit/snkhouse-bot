@@ -277,28 +277,32 @@ export default async function AnalyticsPage() {
           {/* Error Logs Viewer */}
           <div className="bg-white rounded-lg shadow-md p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-gray-900">📋 Logs de Erros (últimos 30 dias)</h2>
+              <h2 className="text-xl font-semibold text-gray-900">📋 Logs de Erros (últimos 50)</h2>
             </div>
-            <div className="space-y-2 max-h-64 overflow-y-auto">
-              {metrics.errorTypes.length > 0 ? (
+            <div className="space-y-2 max-h-96 overflow-y-auto">
+              {metrics.errorLogs && metrics.errorLogs.length > 0 ? (
                 <>
-                  <div className="text-xs text-gray-500 mb-2">
+                  <div className="text-xs text-gray-500 mb-3 pb-2 border-b">
                     Total: {metrics.totalErrors} erros | {metrics.overloadErrors} overload
                   </div>
-                  {metrics.errorTypes.map((errorType, idx) => (
+                  {metrics.errorLogs.map((log, idx) => (
                     <div
                       key={idx}
-                      className="p-3 bg-red-50 border border-red-100 rounded text-sm"
+                      className="p-3 bg-red-50 border border-red-100 rounded text-sm hover:bg-red-100 transition-colors"
                     >
                       <div className="flex items-center justify-between mb-1">
-                        <span className="font-semibold text-red-700">{errorType.type}</span>
-                        <span className="text-red-600 text-xs">{errorType.count}x</span>
+                        <span className="font-semibold text-red-700">{log.type}</span>
+                        <span className="text-xs text-gray-500">
+                          {new Date(log.timestamp).toLocaleString('pt-BR')}
+                        </span>
                       </div>
-                      <div className="text-xs text-gray-600">
-                        {errorType.type === 'AI_RetryError' && 'Falha após múltiplas tentativas (Claude API)'}
-                        {errorType.type === 'ApiCallError' && 'Erro na chamada da API'}
-                        {errorType.type === 'TimeoutError' && 'Timeout na requisição'}
-                        {errorType.type === 'Unknown' && 'Erro não classificado'}
+                      {log.processor && (
+                        <div className="text-xs text-gray-600 mb-1">
+                          Processor: <span className="font-mono bg-gray-200 px-1 rounded">{log.processor}</span>
+                        </div>
+                      )}
+                      <div className="text-xs text-gray-700 mt-2 font-mono bg-white p-2 rounded border border-gray-200">
+                        {log.message}
                       </div>
                     </div>
                   ))}

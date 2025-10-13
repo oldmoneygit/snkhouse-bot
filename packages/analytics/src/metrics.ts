@@ -85,6 +85,12 @@ export interface DashboardMetrics {
     count: number;
   }>;
   overloadErrors: number;
+  errorLogs: Array<{
+    timestamp: string;
+    type: string;
+    message: string;
+    processor?: string;
+  }>;
   // Métricas de WooCommerce
   productsSearched: number;
   topSearchedProducts: Array<{
@@ -323,6 +329,7 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
       totalErrors: aiMetrics.totalErrors,
       errorTypes: aiMetrics.errorTypes,
       overloadErrors: aiMetrics.overloadErrors,
+      errorLogs: aiMetrics.errorLogs,
       // Métricas de WooCommerce (REAIS)
       productsSearched: wooMetrics.productsSearched,
       topSearchedProducts: wooMetrics.topSearchedProducts,

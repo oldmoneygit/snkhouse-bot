@@ -33,6 +33,12 @@ export interface AIPerformanceMetrics {
     count: number;
   }>;
   overloadErrors: number; // Erros de overload Anthropic
+  errorLogs: Array<{
+    timestamp: string;
+    type: string;
+    message: string;
+    processor?: string;
+  }>;
 }
 
 /**
@@ -158,14 +164,76 @@ export async function getAIPerformanceMetrics(): Promise<AIPerformanceMetrics> {
     const estimatedCost = Math.round((claudeCost + chatgptCost) * 100) / 100;
 
     // === ERROR METRICS ===
-    const errors = errorMessages?.filter((msg: any) => msg.metadata?.error === true) || [];
+    // Buscar mensagens de erro com created_at para timestamp
+    const { data: fullErrorMessages } = await supabaseAdmin
+      .from('messages')
+      .select('metadata, content, created_at')
+      .eq('role', 'system')
+      .gte('created_at', last30days)
+      .order('created_at', { ascending: false })
+      .limit(50); // Últimos 50 erros
+
+    const errors = fullErrorMessages?.filter((msg: any) => msg.metadata?.error === true) || [];
     const totalErrors = errors.length;
 
-    // Error types aggregation
+    // Função auxiliar para extrair tipo de erro do conteúdo
+    const extractErrorType = (err: any): string => {
+      // 1. Verificar metadata primeiro
+      if (err.metadata?.error_type) {
+        return err.metadata.error_type;
+      }
+
+      // 2. Extrair do conteúdo da mensagem
+      const content = err.content?.toLowerCase() || '';
+
+      if (content.includes('overload') || err.metadata?.is_overloaded) {
+        return 'Overload (Anthropic API)';
+      }
+      if (content.includes('timeout') || content.includes('timed out')) {
+        return 'Timeout Error';
+      }
+      if (content.includes('ai_retryerror') || content.includes('retry')) {
+        return 'AI Retry Error';
+      }
+      if (content.includes('rate limit')) {
+        return 'Rate Limit Error';
+      }
+      if (content.includes('unauthorized') || content.includes('403')) {
+        return 'Unauthorized Error';
+      }
+      if (content.includes('not found') || content.includes('404')) {
+        return 'Not Found Error';
+      }
+      if (content.includes('network') || content.includes('connection')) {
+        return 'Network Error';
+      }
+      if (content.includes('woocommerce')) {
+        return 'WooCommerce Error';
+      }
+
+      return 'Unknown Error';
+    };
+
+    // Error types aggregation com melhor detecção
     const errorTypeMap = new Map<string, number>();
+    const errorLogs: Array<{
+      timestamp: string;
+      type: string;
+      message: string;
+      processor?: string;
+    }> = [];
+
     errors.forEach((err: any) => {
-      const errorType = err.metadata?.error_type || 'Unknown';
+      const errorType = extractErrorType(err);
       errorTypeMap.set(errorType, (errorTypeMap.get(errorType) || 0) + 1);
+
+      // Adicionar ao log detalhado
+      errorLogs.push({
+        timestamp: err.created_at,
+        type: errorType,
+        message: err.content?.substring(0, 150) || 'No message',
+        processor: err.metadata?.processor || 'unknown'
+      });
     });
 
     const errorTypes = Array.from(errorTypeMap.entries())
@@ -227,7 +295,8 @@ export async function getAIPerformanceMetrics(): Promise<AIPerformanceMetrics> {
       // Error metrics
       totalErrors,
       errorTypes,
-      overloadErrors
+      overloadErrors,
+      errorLogs
     };
   } catch (error) {
     console.error('❌ [Aggregator] Erro ao calcular métricas de IA:', error);
@@ -249,7 +318,8 @@ export async function getAIPerformanceMetrics(): Promise<AIPerformanceMetrics> {
       estimatedCost: 0,
       totalErrors: 0,
       errorTypes: [],
-      overloadErrors: 0
+      overloadErrors: 0,
+      errorLogs: []
     };
   }
 }
