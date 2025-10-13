@@ -93,9 +93,12 @@ export async function getAIPerformanceMetrics(): Promise<AIPerformanceMetrics> {
       ? Math.round((chatgptFallbackCount / totalMessages) * 100 * 10) / 10 // 1 decimal
       : 0;
 
-    const claudeSuccessRate = totalMessages > 0
-      ? Math.round((claudeMessages.length / totalMessages) * 100 * 10) / 10
-      : 0;
+    // Taxa de sucesso do Claude: mensagens do Claude sem erro / total de mensagens do Claude tentadas
+    // Considerar que o total de tentativas = mensagens do Claude + fallbacks (pois fallback só acontece após falha)
+    const totalClaudeAttempts = claudeMessages.length + chatgptFallbackCount;
+    const claudeSuccessRate = totalClaudeAttempts > 0
+      ? Math.round((claudeMessages.length / totalClaudeAttempts) * 100 * 10) / 10
+      : 100; // 100% se não houver tentativas ainda
 
     // === RESPONSE TIME METRICS ===
     const claudeResponseTimes = claudeMessages

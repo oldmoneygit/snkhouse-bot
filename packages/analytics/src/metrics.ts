@@ -114,11 +114,12 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
       .from('conversations')
       .select('*', { count: 'exact', head: true });
 
-    // 2. Conversas ativas (status = active)
+    // 2. Conversas ativas (ativas na última 1 hora)
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
     const { count: activeConversations } = await supabaseAdmin
       .from('conversations')
       .select('*', { count: 'exact', head: true })
-      .eq('status', 'active');
+      .gte('updated_at', oneHourAgo);
 
     // 3. Total de mensagens
     const { count: totalMessages } = await supabaseAdmin

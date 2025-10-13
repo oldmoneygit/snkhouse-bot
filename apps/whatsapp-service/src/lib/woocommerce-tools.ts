@@ -21,47 +21,110 @@ export const woocommerceTools = {
   // TOOL 1: Search Products
   // =====================================
   searchProducts: {
-    description: 'Buscar productos en el catálogo por nombre, marca o modelo (ej: "jordan 1", "nike dunk", "yeezy"). Retorna hasta {limit} productos con ID, nombre, precio, stock y URL.',
+    description: 'Buscar productos en el catálogo por nombre, marca o modelo (ej: "jordan 1", "nike dunk", "yeezy"). Usa búsqueda inteligente con múltiples estrategias automáticas. Retorna hasta {limit} productos con ID, nombre, precio, stock y URL.',
     parameters: z.object({
-      query: z.string().describe('Término de búsqueda (ej: "jordan 1", "nike dunk")'),
+      query: z.string().describe('Término de búsqueda (ej: "jordan 1", "nike dunk", "strangelove")'),
       limit: z.number().int().optional().default(5).describe('Cantidad máxima de resultados (default 5)')
     }),
     execute: async ({ query, limit = 5 }: { query: string; limit?: number }) => {
-      console.log(`[WooCommerce Tool] searchProducts: "${query}", limit: ${limit}`);
+      console.log(`[WooCommerce Tool] 🔍 searchProducts (intelligent): "${query}", limit: ${limit}`);
 
-      try {
-        const response = await woocommerceClient.get('/products', {
-          params: {
-            search: query,
-            per_page: limit,
-            status: 'publish',
-            _fields: 'id,name,price,images,stock_status,permalink'
-          }
-        });
+      /**
+       * Estrategia de búsqueda inteligente con fallbacks:
+       * 1. Busca con query original (ej: "strangelove")
+       * 2. Si no encuentra, busca con últimas 2 palabras (para padrão "Nike SB Dunk Low STRANGE LOVE")
+       * 3. Se no encuentra, busca con cada palabra individual
+       * 4. Se no encuentra, busca con primeiras 3 letras de cada palavra
+       * 5. Se no encuentra nada, retorna not found
+       */
 
-        const products = response.data.map((p: any) => ({
-          id: p.id,
-          name: p.name,
-          price: `$${p.price} ARS`,
-          stock: p.stock_status === 'instock' ? 'En stock' : 'Sin stock',
-          url: p.permalink,
-          image: p.images?.[0]?.src || null
-        }));
+      const searchStrategies: string[] = [];
+      const originalQuery = query.trim();
 
-        console.log(`[WooCommerce Tool] ✅ Found ${products.length} products`);
+      // Estratégia 1: Query original
+      searchStrategies.push(originalQuery);
 
-        return {
-          found: true,
-          count: products.length,
-          products
-        };
-      } catch (error: any) {
-        console.error('[WooCommerce Tool] ❌ searchProducts error:', error.message);
-        return {
-          found: false,
-          error: 'Error al buscar productos'
-        };
+      // Processar palavras
+      const words = originalQuery.toLowerCase().split(/\s+/);
+
+      // Estratégia 2: Últimas 2 palavras (padrão Nike SB Dunk Low STRANGE LOVE)
+      if (words.length >= 2) {
+        searchStrategies.push(words.slice(-2).join(' '));
       }
+
+      // Estratégia 3: Última palavra (se houver múltiplas)
+      if (words.length > 1) {
+        searchStrategies.push(words[words.length - 1]);
+      }
+
+      // Estratégia 4: Cada palavra individual (se ainda não tentou)
+      words.forEach((word) => {
+        if (word.length >= 3 && !searchStrategies.includes(word)) {
+          searchStrategies.push(word);
+        }
+      });
+
+      // Estratégia 5: Primeiras 3 letras de cada palavra (mínimo 4 letras)
+      words.forEach((word) => {
+        if (word.length >= 4) {
+          const prefix = word.substring(0, 3);
+          if (!searchStrategies.includes(prefix)) {
+            searchStrategies.push(prefix);
+          }
+        }
+      });
+
+      console.log(`[WooCommerce Tool] 📋 Search strategies: ${searchStrategies.join(' → ')}`);
+
+      // Tentar cada estratégia até encontrar resultados
+      for (let i = 0; i < searchStrategies.length; i++) {
+        const searchTerm = searchStrategies[i];
+        console.log(`[WooCommerce Tool] 🔎 Trying strategy ${i + 1}/${searchStrategies.length}: "${searchTerm}"`);
+
+        try {
+          const response = await woocommerceClient.get('/products', {
+            params: {
+              search: searchTerm,
+              per_page: limit,
+              status: 'publish',
+              _fields: 'id,name,price,images,stock_status,permalink'
+            }
+          });
+
+          if (response.data && response.data.length > 0) {
+            const products = response.data.map((p: any) => ({
+              id: p.id,
+              name: p.name,
+              price: `$${p.price} ARS`,
+              stock: p.stock_status === 'instock' ? 'En stock' : 'Sin stock',
+              url: p.permalink,
+              image: p.images?.[0]?.src || null
+            }));
+
+            console.log(`[WooCommerce Tool] ✅ Found ${products.length} products with strategy "${searchTerm}"`);
+
+            return {
+              found: true,
+              count: products.length,
+              products,
+              search_used: searchTerm, // Para debug
+              strategy_number: i + 1
+            };
+          }
+
+          console.log(`[WooCommerce Tool] ⚠️ No results with "${searchTerm}", trying next strategy...`);
+        } catch (error: any) {
+          console.error(`[WooCommerce Tool] ❌ Error with strategy "${searchTerm}":`, error.message);
+          // Continue para próxima estratégia
+        }
+      }
+
+      // Nenhuma estratégia funcionou
+      console.log(`[WooCommerce Tool] ❌ No products found after ${searchStrategies.length} strategies`);
+      return {
+        found: false,
+        error: 'No encontré ese producto en el catálogo. Podés consultar por otro modelo o verificar el nombre.'
+      };
     }
   },
 
