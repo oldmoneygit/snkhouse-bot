@@ -188,6 +188,10 @@ export async function generateWithOpenAI(
         const toolName = toolCall.function.name;
         const toolArgs = JSON.parse(toolCall.function.arguments);
 
+        console.log(`\n🔧 === TOOL CALL DEBUG ===`);
+        console.log(`📍 Tool name: ${toolName}`);
+        console.log(`📦 Original args from AI:`, toolArgs);
+
         const ORDERS_TOOLS = [
           "get_order_status",
           "search_customer_orders",
@@ -195,21 +199,33 @@ export async function generateWithOpenAI(
           "track_shipment",
         ];
         if (ORDERS_TOOLS.includes(toolName)) {
+          console.log(`🔍 This is an ORDER tool - checking context...`);
+          console.log(`   Context available:`, {
+            customerId: runtimeContext.customerId,
+            customerEmail: runtimeContext.customerEmail
+              ? sanitizeEmail(runtimeContext.customerEmail)
+              : null,
+          });
+
           if (!toolArgs.customer_id && runtimeContext.customerId) {
             // Tem customer_id numérico, usar
             toolArgs.customer_id = runtimeContext.customerId;
             console.log(
-              `[OpenAI] Injetado customer_id=${runtimeContext.customerId} para tool ${toolName}`,
+              `   ✅ Injected customer_id=${runtimeContext.customerId}`,
             );
           } else if (!toolArgs.customer_id && runtimeContext.customerEmail) {
             // Não tem customer_id mas tem email, usar email como fallback
             toolArgs.customer_id = runtimeContext.customerEmail;
             console.log(
-              `[OpenAI] Injetado customerEmail como fallback para tool ${toolName}: ${sanitizeEmail(runtimeContext.customerEmail)}`,
+              `   ✅ Injected customerEmail as fallback: ${sanitizeEmail(runtimeContext.customerEmail)}`,
             );
           } else if (!toolArgs.customer_id) {
             console.log(
-              "[OpenAI] Tool de pedidos sem customer_id e sem email no contexto",
+              `   ⚠️  No customer_id in args and no context available!`,
+            );
+          } else {
+            console.log(
+              `   ℹ️  customer_id already in args: ${toolArgs.customer_id}`,
             );
           }
         }
@@ -217,18 +233,21 @@ export async function generateWithOpenAI(
         // Injetar conversation_id em TODAS as tools se disponível
         if (runtimeContext.conversationId && !toolArgs.conversation_id) {
           toolArgs.conversation_id = runtimeContext.conversationId;
+          console.log(`   ✅ Injected conversation_id`);
         }
 
-        console.log(`⚙️  [OpenAI] Executando tool: ${toolName}`, {
-          has_customer_id: !!toolArgs.customer_id,
-          has_conversation_id: !!toolArgs.conversation_id,
-        });
+        console.log(`📤 Final args being passed to tool:`, toolArgs);
 
         try {
+          console.log(`⏳ Calling executeToolCall("${toolName}", ...)...`);
           const toolResult = await executeToolCall(toolName, toolArgs);
 
-          console.log(`✅ [OpenAI] Tool executada com sucesso`);
-          console.log(`📊 [OpenAI] Resultado (${toolResult.length} chars)`);
+          console.log(`✅ Tool executed successfully!`);
+          console.log(`📊 Result length: ${toolResult.length} chars`);
+          console.log(
+            `📄 Result preview: ${toolResult.substring(0, 200)}${toolResult.length > 200 ? "..." : ""}`,
+          );
+          console.log(`🔧 === END TOOL CALL ===\n`);
 
           // Adicionar resultado da tool
           currentMessages.push({
@@ -237,7 +256,11 @@ export async function generateWithOpenAI(
             content: toolResult,
           } as any);
         } catch (error: any) {
-          console.error(`❌ [OpenAI] Erro na tool ${toolName}:`, error.message);
+          console.error(`❌ Tool execution FAILED!`);
+          console.error(`   Error name: ${error.name}`);
+          console.error(`   Error message: ${error.message}`);
+          console.error(`   Error stack:`, error.stack);
+          console.log(`🔧 === END TOOL CALL (with error) ===\n`);
 
           currentMessages.push({
             role: "tool" as const,
