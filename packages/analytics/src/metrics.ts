@@ -233,26 +233,35 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
       .map(([status, count]) => ({ status, count }))
       .sort((a, b) => b.count - a.count);
 
-    // 10. Mensagens por hora (últimas 24h)
+    // 10. Mensagens por hora (últimas 24h em tempo real)
     const { data: recentMessages } = await supabaseAdmin
       .from('messages')
       .select('created_at')
       .gte('created_at', twentyFourHoursAgo)
       .order('created_at', { ascending: true });
 
-    const hourMap = new Map<number, number>();
-    for (let i = 0; i < 24; i++) {
-      hourMap.set(i, 0);
+    // Criar array com as últimas 24 horas em ordem cronológica (de 24h atrás até agora)
+    const nowDate = new Date();
+    const currentHour = nowDate.getHours();
+    const messagesByHour: Array<{ hour: number; count: number }> = [];
+
+    // Preencher últimas 24 horas em ordem cronológica
+    for (let i = 23; i >= 0; i--) {
+      const hourValue = (currentHour - i + 24) % 24;
+      messagesByHour.push({ hour: hourValue, count: 0 });
     }
 
+    // Contar mensagens por hora
     recentMessages?.forEach((msg: MessageData) => {
-      const hour = new Date(msg.created_at).getHours();
-      hourMap.set(hour, (hourMap.get(hour) || 0) + 1);
-    });
+      const msgDate = new Date(msg.created_at);
+      const msgHour = msgDate.getHours();
 
-    const messagesByHour = Array.from(hourMap.entries())
-      .map(([hour, count]) => ({ hour, count }))
-      .sort((a, b) => a.hour - b.hour);
+      // Encontrar o índice correspondente
+      const hourIndex = messagesByHour.findIndex(h => h.hour === msgHour);
+      if (hourIndex !== -1) {
+        messagesByHour[hourIndex].count++;
+      }
+    });
 
     // 11. Tempo médio de resposta (simplificado)
     // Calcula a diferença média entre mensagens do usuário e do assistente
