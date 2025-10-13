@@ -3,3 +3,9 @@
 
 echo "🔍 Executando verificação de segurança..."
 npm run check:secrets
+
+echo "✨ Executando lint-staged..."
+npx lint-staged
+
+echo "🔎 Executando type-check..."
+pnpm type-check

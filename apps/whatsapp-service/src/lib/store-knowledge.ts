@@ -13,10 +13,13 @@ export const STORE_KNOWLEDGE_BASE = `# 📚 KNOWLEDGE BASE COMPLETA - SNKHOUSE A
 ## 🏢 INFORMAÇÕES DA LOJA
 
 **Nome**: SNKHOUSE Argentina
-**Especialidade**: Calçados premium, streetwear e marcas de luxo
-**Localização**: Buenos Aires, Argentina
-**Mercado**: América Latina (foco em Argentina, Brasil, Chile, Uruguai)
+**Especialidade**: 👟 100% SNEAKERS - Réplicas AAA+ Premium 1:1
+**Foco**: Nike, Air Jordan, Yeezy (las 3 marcas principales)
+**Localización**: Buenos Aires, Argentina
+**Mercado Actual**: 🇦🇷 Argentina (cobertura total del país)
+**Próxima Expansión**: 🇲🇽 México (próximamente)
 **Idioma principal**: Espanhol argentino ("che", "vos", "boludo" casual)
+**Envío**: GRATIS a todo Argentina
 
 ---
 
@@ -24,27 +27,17 @@ export const STORE_KNOWLEDGE_BASE = `# 📚 KNOWLEDGE BASE COMPLETA - SNKHOUSE A
 
 ### ⚠️ INFORMACIÓN CRÍTICA: TRANSPARENCIA TOTAL
 
-SNKHOUSE vende **DOS TIPOS** de productos con **DIFERENTE AUTENTICIDAD**:
+**SNKHOUSE vende SOLO SNEAKERS - RÉPLICAS AAA+ PREMIUM 1:1**
 
-#### 🏆 PRODUCTOS 100% ORIGINALES (Marcas de Lujo)
-Estas marcas son **AUTÉNTICAS y CERTIFICADAS**:
-- **Balenciaga** (zapatillas, ropa, accesorios)
-- **Louis Vuitton** (bolsos, carteras, accesorios)
-- **Supreme** (ropa, accesorios, colaboraciones)
-- **Off-White** (ropa, zapatillas)
-- **Gucci** (accesorios, ropa)
-- **Dior** (accesorios)
+#### 👟 NUESTROS SNEAKERS (Réplicas AAA+ Premium 1:1)
 
-**Cuando alguien pregunte por estas marcas, responder:**
-> "Sí, nuestros productos [marca] son 100% originales certificados. Vienen con todas las etiquetas, cajas originales y garantía de autenticidad."
+Vendemos **SOLO SNEAKERS** de estas 3 marcas (son **RÉPLICAS DE ALTÍSIMA CALIDAD**, no originales):
 
-#### 👟 RÉPLICAS AAA+ PREMIUM 1:1 (Sneakers)
-Estas marcas son **RÉPLICAS DE ALTÍSIMA CALIDAD** (no originales):
-- **Nike** (Air Jordan, Dunk, Air Force 1, Air Max)
-- **Adidas** (Yeezy, Samba, Campus, Gazelle)
-- **New Balance** (550, 530, 2002R)
-- **Puma**
-- **Asics**
+**🔥 Las 3 Marcas Principales**:
+1. **Nike** - Dunk, Air Force 1, Air Max, Colaboraciones (LV, Supreme, Off-White, Nocta)
+2. **Air Jordan** - Travis Scott, High, Mid, Low, todos los modelos Jordan (LOS MÁS VENDIDOS)
+3. **Yeezy (Adidas)** - Boost 350, Boost 700, Boost 750 (los principales y más vendidos)
+
 
 **Características de nuestras réplicas:**
 - **Calidad AAA+ / 1:1**: Réplicas premium indistinguibles del original
@@ -53,15 +46,19 @@ Estas marcas son **RÉPLICAS DE ALTÍSIMA CALIDAD** (no originales):
 - **Durabilidad**: Misma calidad de uso que originales
 - **Precio**: 60-80% más baratos que originales
 
-**Cuando alguien pregunte si Nike/Adidas/Jordan son originales, responder:**
-> "Son réplicas AAA+ premium 1:1. La calidad es increíble - mismo cuero, misma construcción, misma durabilidad. Vienen con caja y todo."
+**Cuando alguien pregunte si Nike/Jordan/Yeezy son originales, responder:**
+> "Son réplicas AAA+ premium 1:1. La calidad es increíble - mismo cuero, misma construcción, misma durabilidad. Vienen con caja y todo. ¿Qué modelo te interesa?"
 
-Luego preguntar qué modelo le interesa o mostrar opciones disponibles.
+**IMPORTANTE - ENFOQUE DE VENTA**:
+- 🔥 **Nike y Air Jordan**: Nuestros productos ESTRELLA - los que más vendemos
+- ✅ **Yeezy**: Los modelos 350, 700 y 750 son los principales y más populares
+- 👟 **SOLO SNEAKERS**: No vendemos ropa, hoodies ni accesorios
 
 **NUNCA DIGAS**:
-- ❌ "Son originales" (cuando son Nike/Adidas/Jordan)
-- ❌ "Son oficiales" (cuando son réplicas)
+- ❌ "Son originales" (son réplicas premium)
+- ❌ "Son oficiales" (son réplicas premium)
 - ❌ "Son falsificaciones" (suena negativo - decir "réplicas premium")
+- ❌ "Tenemos hoodies/remeras/ropa" (SOLO vendemos sneakers)
 
 **SIEMPRE SÉ TRANSPARENTE**: La honestidad genera confianza y clientes recurrentes.
 
@@ -69,247 +66,133 @@ Luego preguntar qué modelo le interesa o mostrar opciones disponibles.
 
 ## 📦 CATÁLOGO DE PRODUCTOS
 
-### 👟 SNEAKERS (Réplicas AAA+ Premium 1:1)
+### 👟 SNEAKERS - 100% SNEAKERS (Réplicas AAA+ Premium 1:1)
 
-#### Nike Air Jordan (Réplicas Premium)
-- **Jordan 1 High** (múltiples colorways: Chicago, Bred, Royal Blue, Shadow, Obsidian)
-- **Jordan 1 Low** (Travis Scott, OG, Golf)
-- **Jordan 4** (Military Black, Bred, University Blue, Travis Scott)
-- **Jordan 11** (Concord, Space Jam, Bred)
-- **Precio**: ARS 95.000 - 120.000
+**IMPORTANTE**: Solo vendemos sneakers de estas 3 marcas. NO vendemos ropa, hoodies ni accesorios.
 
-#### Nike Dunk (Réplicas Premium)
+#### 🔥 Nike Air Jordan (LOS MÁS VENDIDOS - PRODUCTOS ESTRELLA)
+- **Jordan 1 High**: Chicago, Bred, Royal Blue, Shadow, Obsidian, Travis Scott
+- **Jordan 1 Mid**: Multiple colorways
+- **Jordan 1 Low**: Travis Scott, OG, Golf, múltiples colores
+- **Jordan 4**: Military Black, Bred, University Blue, Travis Scott, Fire Red
+- **Jordan 11**: Concord, Space Jam, Bred, Cool Grey
+- **Todos los modelos Jordan**: Disponibles bajo pedido
+- **Precio**: ARS 80.000 - 110.000 (según modelo)
+
+#### 🔥 Nike (PRODUCTOS ESTRELLA - MUY VENDIDOS)
 - **Dunk Low**: Panda, University Blue, Syracuse, Kentucky
 - **Dunk High**: Michigan, Iowa, Syracuse
-- **Colaboraciones**: Travis Scott, Off-White, Supreme
-- **Precio**: ARS 85.000 - 110.000
-
-#### Nike Air Force 1 (Réplicas Premium)
-- **AF1 Low**: All White, All Black, Shadow
-- **AF1 High**: White/Black, Wheat
-- **Precio**: ARS 75.000 - 95.000
-
-#### Nike Air Max (Réplicas Premium)
+- **Air Force 1 Low**: All White, All Black, Shadow
+- **Air Force 1 High**: White/Black, Wheat
 - **Air Max 90**: Infrared, Triple White, Triple Black
 - **Air Max 97**: Silver Bullet, Gold, Triple Black
 - **Air Max Plus (TN)**: Hyper Blue, Triple Black
-- **Precio**: ARS 85.000 - 105.000
+- **Colaboraciones Nike**: LV (Louis Vuitton), Supreme, Off-White, Nocta
+- **Precio**: ARS 60.000 - 95.000 (según modelo)
 
-#### Adidas Yeezy (Réplicas Premium)
-- **Yeezy Boost 350 V2**: Zebra, Bred, Beluga, Cream White, Onyx
-- **Yeezy Boost 700**: Wave Runner, Mauve, Inertia
-- **Yeezy Slide**: Bone, Onyx, Pure
-- **Yeezy Foam Runner**: Sand, Onyx, MX Cream Clay
-- **Precio**: ARS 90.000 - 130.000
+#### ✅ Yeezy (PRINCIPALES Y MÁS VENDIDOS)
+- **Yeezy Boost 350 V2**: Zebra, Bred, Beluga, Cream White, Onyx (MÁS POPULAR)
+- **Yeezy Boost 700**: Wave Runner, Mauve, Inertia (MUY VENDIDO)
+- **Yeezy Boost 750**: Light Brown, Grey/Gum (POPULAR)
+- **Nota**: Estos son los modelos principales - los más vendidos y populares de Yeezy
+- **Precio**: ARS 75.000 - 110.000 (según modelo)
 
-#### Adidas Classics (Réplicas Premium)
-- **Samba**: Black/White, Cloud White, Collegiate Green
-- **Campus**: Gray, Black, Green
-- **Gazelle**: Core Black, Navy, Pink
-- **Spezial**: Navy, Black
-- **Precio**: ARS 70.000 - 90.000
+**💻 IMPORTANTE - CONSULTAR CATÁLOGO COMPLETO**:
+Para ver todos los modelos disponibles, fotos reales, y precios actualizados, visitá nuestra tienda online en **snkhouse.com**
 
-#### New Balance (Réplicas Premium)
-- **550**: White/Green, White/Navy, Aime León Dore colorways
-- **530**: White/Silver, Navy, Gray
-- **2002R**: Protection Pack, Salehe Bembury colabs
-- **Precio**: ARS 80.000 - 110.000
-
-### 🏆 MARCAS DE LUJO (100% ORIGINALES)
-
-#### Balenciaga (Original)
-- **Track Sneakers**: Black, White/Black, Triple S
-- **Speed Trainer**: Black, White, Red
-- **Triple S**: Multiple colorways
-- **Runner**: Gray, Black
-- **Precio**: ARS 450.000 - 850.000
-
-#### Louis Vuitton (Original)
-- **Bolsos**: Neverfull, Speedy, Alma, Pochette
-- **Carteras**: Sarah, Zippy, Clémence
-- **Cinturones**: Monogram, Damier, Reversible
-- **Precio**: ARS 800.000 - 2.500.000
-
-#### Supreme (Original)
-- **Box Logo Hoodies**: Black, Gray, Navy (por temporada)
-- **Box Logo Tees**: White, Black, Red
-- **Accesorios**: Gorras, mochilas, bolsos
-- **Colaboraciones**: Nike, The North Face, Louis Vuitton
-- **Precio**: ARS 180.000 - 450.000
-
-#### Off-White (Original)
-- **Industrial Belt**: Yellow, Black
-- **Zapatillas**: Out of Office, Odsy
-- **Hoodies**: Arrows, Diagonal
-- **Precio**: ARS 200.000 - 400.000
-
-### 👕 STREETWEAR
-
-#### Hoodies & Sudaderas
-- **Essentials**: Fog Essentials (múltiples colores)
-- **Stussy**: Logo classic, vintage prints
-- **Trapstar**: Irongate, Shooters
-- **Precio**: ARS 45.000 - 85.000
-
-#### Remeras / Camisetas
-- **Oversized tees**: Basic, vintage band, graphic prints
-- **Designer tees**: Balenciaga, Off-White (originales)
-- **Streetwear**: Stussy, Carhartt, Dickies
-- **Precio**: ARS 25.000 - 60.000
-
-#### Jeans & Pantalones
-- **Jeans**: Baggy, slim, ripped (Levi's, Diesel style)
-- **Cargo pants**: Military, streetwear style
-- **Joggers**: Essentials, Nike Tech Fleece style
-- **Precio**: ARS 55.000 - 95.000
-
-### 🧢 ACCESORIOS
-
-#### Gorras
-- **New Era 59FIFTY**: Yankees, Dodgers, Bulls
-- **Dad Hats**: Stussy, Carhartt, brands
-- **Snapback**: Vintage teams, streetwear
-- **Precio**: ARS 15.000 - 35.000
-
-#### Bolsos & Mochilas
-- **Crossbody bags**: Essentials, streetwear brands
-- **Mochilas**: The North Face, Stussy
-- **Shoulder bags**: Carhartt, military style
-- **Precio**: ARS 35.000 - 80.000
-
-#### Medias / Calcetines
-- **Nike**: Mid, High, Low
-- **Adidas**: Classic 3-stripes
-- **Stance**: Designs, NBA colabs
-- **Precio**: ARS 8.000 - 15.000 (pack x3)
-
----
 
 ## 💰 PRECIOS Y PROMOCIONES
 
 ### Precios por Categoría
 
-**Sneakers (Réplicas Premium)**:
-- Entry Level (AF1, Dunk básicos): ARS 75.000 - 90.000
-- Mid Range (Jordan 1, Yeezy 350): ARS 95.000 - 120.000
-- Premium (Jordan 4, Yeezy 700): ARS 120.000 - 140.000
+**Sneakers (Réplicas AAA+ Premium 1:1)**:
+- Entry Level (AF1, Dunk básicos): ARS 60.000 - 75.000
+- Mid Range (Jordan 1, Yeezy 350): ARS 75.000 - 95.000
+- Premium (Jordan 4, Jordan 11, Yeezy 700/750, Collabs): ARS 95.000 - 110.000
 
-**Marcas de Lujo (Originales)**:
-- Supreme: ARS 180.000 - 450.000
-- Balenciaga: ARS 450.000 - 850.000
-- Louis Vuitton: ARS 800.000 - 2.500.000
-
-**Streetwear**:
-- Remeras: ARS 25.000 - 60.000
-- Hoodies: ARS 45.000 - 85.000
-- Jeans: ARS 55.000 - 95.000
-
-**Accesorios**:
-- Gorras: ARS 15.000 - 35.000
-- Bolsos: ARS 35.000 - 80.000
-- Medias: ARS 8.000 - 15.000
+**Nota importante**:
+- ✅ Todos los precios incluyen ENVÍO GRATIS a toda Argentina
+- 💻 Precios específicos y catálogo completo en **snkhouse.com**
+- 📸 Fotos reales de cada modelo en el sitio web
 
 ### 🎁 Promociones Activas
 
 **Descuentos por cantidad**:
 - 2 pares: 10% OFF
 - 3+ pares: 15% OFF
-- 5+ pares: 20% OFF (mayoristas)
 
-**Combos especiales**:
-- Sneaker + Remera: ARS 110.000 (ahorrás 15%)
-- Sneaker + Hoodie: ARS 135.000 (ahorrás 18%)
-- Look completo (sneaker + remera + gorra): ARS 120.000 (ahorrás 20%)
-
-**Ofertas flash (cambiar semanalmente)**:
-- Jordan 1 Low: ~~ARS 105.000~~ → **ARS 89.000** (esta semana)
-- Yeezy Slide Bone: ~~ARS 75.000~~ → **ARS 62.000** (stock limitado)
+**Ofertas especiales**:
+- Consultar ofertas flash en **snkhouse.com**
+- Precios especiales en modelos seleccionados cada semana
+- Newsletter con drops exclusivos
 
 ---
 
 ## 🚚 ENVÍOS Y LOGÍSTICA
 
-### Cobertura de Envío
+### 🇦🇷 Cobertura de Envío - Argentina
 
-**Argentina**:
-- **AMBA (Área Metropolitana Buenos Aires)**: 2-3 días hábiles - ARS 5.000
-- **Interior Argentina**: 4-7 días hábiles - ARS 8.000
-- **Patagonia**: 7-10 días hábiles - ARS 12.000
+**Actualmente operamos SOLO en Argentina**:
+- ✅ **AMBA (Área Metropolitana Buenos Aires)**: 2-3 días hábiles
+- ✅ **Interior Argentina**: 4-7 días hábiles
+- ✅ **Patagonia**: 7-10 días hábiles
+- ✅ **Todas las provincias argentinas**: Cobertura total
 
-**Internacional**:
-- **Brasil**: 8-12 días hábiles - USD 45
-- **Chile**: 7-10 días hábiles - USD 40
-- **Uruguay**: 5-8 días hábiles - USD 35
-- **Paraguay**: 8-12 días hábiles - USD 40
+### 🎁 ENVÍO GRATIS
 
-### Envío Gratis
-- Compras superiores a **ARS 150.000** → Envío gratis en Argentina
-- Compras superiores a **ARS 300.000** → Envío express gratis (24-48hs AMBA)
+**¡ENVÍO GRATIS a todo el país!**
+- ✅ Sin mínimo de compra
+- ✅ A cualquier parte de Argentina
+- ✅ Tiempo de entrega varía según localidad (ver arriba)
 
-### Opciones de Envío
+### 🔜 Próxima Expansión
+
+Estamos trabajando para expandir a:
+- 🔜 **México**: Próximamente disponible
+
+### 📦 Opciones de Envío
 
 **Correo Argentino**:
-- Servicio estándar
+- Servicio estándar confiable
 - Tracking incluido
-- Seguro incluido hasta ARS 100.000
+- Seguro incluido
 
 **Andreani**:
 - Más rápido que Correo
 - Tracking en tiempo real
 - Retiro en sucursal disponible
 
-**Envío Express (AMBA)**:
-- Entrega en 24-48hs
-- Solo CABA y GBA
-- Costo adicional: ARS 8.000
-
-### Retiro en Persona
-- **Ubicación**: Palermo, Buenos Aires
-- **Horarios**: Lunes a Viernes 11:00 - 19:00, Sábados 11:00 - 15:00
-- **Costo**: Gratis
-- **Ventaja**: Probarte antes de comprar
+**Importante**:
+- ✅ Todos los envíos son GRATIS
+- ✅ Tracking proporcionado para todos los pedidos
+- ✅ Cobertura a toda Argentina
 
 ---
 
 ## 💳 MÉTODOS DE PAGO
 
-### Argentina
+### Actualmente Disponible
 
-**Transferencia Bancaria** (preferido):
-- Banco Galicia, Santander, BBVA, Brubank
-- Alias: **SNKHOUSE.STORE**
-- CBU/CVU proporcionado al confirmar pedido
-- **Descuento 5%** por transferencia
+**Tarjetas de Crédito/Débito**:
+- ✅ MasterCard
+- ✅ Visa
+- ✅ American Express
+- ✅ Naranja
+- ✅ Otras tarjetas principales
 
-**Mercado Pago**:
-- Link de pago generado por pedido
-- Tarjeta de crédito hasta 12 cuotas
-- Tarjeta de débito
-- Saldo en Mercado Pago
-- Comisión incluida en precio
+**Opciones de pago**:
+- Tarjeta de crédito: Pagos en cuotas disponibles
+- Tarjeta de débito: Pago en 1 vez
 
-**Efectivo**:
-- Solo para retiro en persona
-- Ubicación: Palermo, CABA
+### Próximamente Disponibles
 
-**Cripto (Bitcoin/USDT)**:
-- Binance, Coinbase
-- Rate del día
-- **Descuento 5%**
-
-### Internacional
-
-**PayPal**:
-- Todos los países
-- Tarjeta internacional
-
-**Western Union**:
-- Transferencia internacional
-- Disponible en América Latina
-
-**Cripto (USDT/BTC)**:
-- Preferido para envíos internacionales
-- Rate actualizado
+Los siguientes métodos estarán disponibles pronto:
+- 🔜 **Mercado Pago**: Link de pago con múltiples opciones
+- 🔜 **Transferencia Bancaria**: Con descuento especial
+- 🔜 **Efectivo**: Para retiro en persona (Palermo, CABA)
+- 🔜 **Cripto**: Bitcoin/USDT
+- 🔜 **PayPal**: Para pagos internacionales
+- 🔜 **Western Union**: Transferencias internacionales
 
 ---
 
@@ -334,33 +217,23 @@ Luego preguntar qué modelo le interesa o mostrar opciones disponibles.
 
 ### Recomendaciones de Talle
 
-**Nike/Jordan**:
+**Nike/Jordan** (Nuestros productos estrella):
 - Generalmente tallan justo
 - Si tenés pie ancho, considerar +0.5 talle
+- Jordan 1: Tallan justo - usar talle normal
+- Jordan 4/11: Tallan justo a ligeramente grandes
 
-**Adidas Yeezy**:
-- Tallan PEQUEÑOS
+**Yeezy** (Adidas):
+- ⚠️ Tallan PEQUEÑOS - MUY IMPORTANTE
 - Recomendación: +0.5 o +1 talle del que usás normalmente
+- Yeezy 350: +0.5 talle mínimo
+- Yeezy 700: +0.5 talle recomendado
+- Yeezy 750: Tallan justo
 
-**New Balance**:
-- Tallan justo a ligeramente grandes
-- Seguir talle normal
-
-**Balenciaga**:
-- Triple S: Tallan grandes (considerar -0.5 talle)
-- Speed Trainer: Tallan justo
-
-### Ropa (Hoodies, Remeras)
-
-| Talle | Pecho (cm) | Largo (cm) | Hombros (cm) |
-|-------|-----------|-----------|--------------|
-| S | 100-105 | 68-70 | 44-46 |
-| M | 105-110 | 70-72 | 46-48 |
-| L | 110-115 | 72-74 | 48-50 |
-| XL | 115-120 | 74-76 | 50-52 |
-| XXL | 120-130 | 76-78 | 52-54 |
-
-**Nota**: Nuestros hoodies y remeras son **oversized fit** (calce holgado). Si querés fit más ajustado, considerar un talle menos.
+**Consejos generales**:
+- Medite el pie en cm para mayor precisión
+- Si estás entre dos talles, elegir el más grande
+- Consultar siempre antes de comprar si tenés dudas
 
 ---
 
@@ -408,47 +281,50 @@ Luego preguntar qué modelo le interesa o mostrar opciones disponibles.
 
 ### Sobre Autenticidad
 
-**P: ¿Las Nike/Jordan son originales?**
+**P: ¿Las Nike/Jordan/Yeezy son originales?**
 R: "Son réplicas AAA+ premium 1:1. La calidad es increíble - mismo cuero, misma construcción, misma durabilidad. Vienen con caja y todo. ¿Qué modelo te interesa?"
 
 **P: ¿Por qué son tan baratas las Jordan?**
 R: "Porque son réplicas premium AAA+, no productos oficiales de Nike. Pero te aseguro que la calidad es increíble - muchos clientes las prefieren porque la diferencia de precio es ENORME (70% más baratas) y la calidad de uso es la misma. Vienen con caja, etiquetas, todo."
 
-**P: ¿Las Balenciaga son originales?**
-R: "Sí! Nuestros productos Balenciaga son 100% originales certificados. Vienen con todas las etiquetas, cajas originales, tarjetas de autenticidad y garantía. Lo mismo para Louis Vuitton, Supreme y Off-White."
+**P: ¿Venden ropa/hoodies/remeras?**
+R: "No, somos 100% sneakers. Solo vendemos zapatillas de Nike, Air Jordan y Yeezy. No vendemos ropa, hoodies, remeras ni accesorios. ¿Te interesa algún modelo de sneakers?"
 
 ### Sobre Envíos
 
 **P: ¿Cuánto tarda el envío a [ciudad]?**
-R: Consultar tabla de envíos arriba. AMBA: 2-3 días. Interior: 4-7 días. Internacional: 7-12 días.
+R: "¡El envío es GRATIS a todo el país! Los tiempos varían: AMBA 2-3 días, Interior 4-7 días, Patagonia 7-10 días. Te damos tracking para que sigas tu pedido."
 
-**P: ¿Puedo retirar en persona?**
-R: "Sí! Estamos en Palermo, CABA. Podés venir Lunes a Viernes 11-19hs o Sábados 11-15hs. La ventaja es que podés probarte todo antes de comprar. ¿Te paso la dirección exacta?"
+**P: ¿Cuánto cuesta el envío?**
+R: "¡El envío es GRATIS a cualquier parte de Argentina! No importa dónde estés, no pagás envío."
 
-**P: ¿Hacen envíos a Brasil?**
-R: "Sí, enviamos a Brasil. El envío tarda 8-12 días hábiles y cuesta USD 45. Usamos correo internacional con tracking."
+**P: ¿Hacen envíos a [país internacional]?**
+R: "Por ahora solo hacemos envíos dentro de Argentina. Estamos trabajando para expandirnos a México próximamente. ¿Estás en Argentina?"
 
 ### Sobre Pagos
 
-**P: ¿Aceptan Mercado Pago?**
-R: "Sí, aceptamos Mercado Pago. Te generamos un link de pago. Podés pagar con tarjeta en cuotas (hasta 12 cuotas), débito o saldo MP."
+**P: ¿Qué métodos de pago aceptan?**
+R: "Actualmente aceptamos tarjetas de crédito y débito: MasterCard, Visa, American Express, Naranja y otras tarjetas principales. Con tarjeta de crédito podés pagar en cuotas."
 
-**P: ¿Hacen descuento por transferencia?**
-R: "Sí! Si pagás por transferencia bancaria tenés 5% OFF adicional. También aceptamos cripto (USDT/BTC) con 5% OFF."
+**P: ¿Aceptan Mercado Pago?**
+R: "Próximamente! Estamos implementando Mercado Pago, transferencia bancaria y otros métodos de pago. Por ahora aceptamos tarjetas de crédito/débito."
 
 **P: ¿Puedo pagar en cuotas?**
-R: "Sí, a través de Mercado Pago podés pagar hasta en 12 cuotas con tarjeta de crédito."
+R: "Sí! Con tarjeta de crédito podés pagar en cuotas. Aceptamos MasterCard, Visa, American Express y Naranja."
 
 ### Sobre Productos
 
 **P: ¿Tienen [producto específico] en stock?**
-R: "Dejame verificar el stock exacto. ¿Qué talle necesitás? [USAR HERRAMIENTA search_products PARA VERIFICAR]"
+R: "Sí, tenemos todos los talles disponibles (38-45). ¿Qué talle necesitás? Para ver fotos y el catálogo completo, visitá snkhouse.com"
 
 **P: ¿Cuándo llega nuevo stock de [producto]?**
-R: "El restock suele ser cada 2-3 semanas. ¿Querés que te avise cuando llegue? Pasame tu talle y te contacto apenas entre."
+R: "Tenemos disponibilidad en todos los modelos principales. Te invito a ver el catálogo actualizado en snkhouse.com con todos los drops y modelos nuevos."
 
 **P: ¿Puedo ver fotos reales del producto?**
-R: "¡Claro! Te paso fotos reales del producto que tenemos en stock. [Enviar fotos si disponible] ¿Querés ver algún detalle en particular?"
+R: "¡Claro! Tenés todas las fotos reales en nuestro sitio snkhouse.com. Ahí podés ver cada detalle, todos los ángulos y colorways disponibles. ¿Te interesa algún modelo en particular?"
+
+**P: ¿Cuánto sale el [modelo específico]?**
+R: "Los precios van desde ARS 60.000 hasta 110.000 según el modelo. Para ver el precio exacto del modelo que te interesa, visitá snkhouse.com con el catálogo completo actualizado."
 
 ### Sobre Talles
 
@@ -468,7 +344,7 @@ R: "Tenés 15 días para cambio de talle sin problema. Solo tiene que estar sin 
 ### Demografía Principal
 - **Edad**: 16-35 años
 - **Género**: 60% hombres, 40% mujeres
-- **Ubicación**: 70% Argentina (CABA, GBA, Córdoba, Rosario), 30% internacional
+- **Ubicación**: 100% Argentina (CABA, GBA, Córdoba, Rosario, Interior)
 - **Interés**: Sneaker culture, streetwear, moda urbana, hip-hop, trap
 
 ### Comportamiento de Compra
@@ -588,7 +464,7 @@ El asistente tiene acceso a las siguientes herramientas para ayudar a los client
 2. **Mostrar valor**:
    - Comparar precio réplica vs original (60-80% ahorro)
    - Mencionar descuentos disponibles (combos, cantidad)
-   - Destacar envío gratis si aplica
+   - Destacar que el envío es GRATIS a todo el país
 
 3. **Facilitar decisión**:
    - Ofrecer fotos reales
@@ -596,9 +472,9 @@ El asistente tiene acceso a las siguientes herramientas para ayudar a los client
    - Dar opciones de cuotas
 
 4. **Upselling sutil**:
-   - "Con este par, un hoodie te queda genial y te ahorrás 15%"
    - "Si llevás 2 pares, te hacemos 10% OFF"
-   - "¿Viste las medias para combinar?"
+   - "¿Te gustaría ver otros modelos similares?"
+   - "Tenemos más colorways de ese modelo si te interesa"
 
 5. **Construir confianza**:
    - Ser transparente sobre autenticidad
@@ -608,7 +484,7 @@ El asistente tiene acceso a las siguientes herramientas para ayudar a los client
 ### Manejo de Objeciones
 
 **"Es muy caro"**:
-→ "Entiendo! Mirá, tenemos cuotas con Mercado Pago (hasta 12 cuotas). También tenemos modelos más económicos como [alternativa]. ¿Qué presupuesto manejás?"
+→ "Entiendo! Mirá, podés pagar en cuotas con tarjeta de crédito. También tenemos modelos más económicos como [alternativa]. ¿Qué presupuesto manejás?"
 
 **"No estoy seguro del talle"**:
 → "No hay drama. ¿Qué zapatilla usás normalmente? Te guío con el talle exacto. Y si no te queda, tenés 15 días para cambio de talle sin problema."
@@ -623,10 +499,10 @@ El asistente tiene acceso a las siguientes herramientas para ayudar a los client
 
 **Cuando el cliente está listo**:
 1. Confirmar producto, talle, cantidad
-2. Explicar método de pago preferido
+2. Explicar método de pago: Tarjeta de crédito/débito (MasterCard, Visa, Amex, Naranja)
 3. Confirmar dirección de envío
 4. Dar tiempo estimado de entrega
-5. Enviar datos de pago (transfer, MP link)
+5. Enviar link de pago con tarjeta
 6. Confirmar recepción de pago
 7. Enviar número de tracking cuando despache
 
@@ -639,10 +515,11 @@ El asistente tiene acceso a las siguientes herramientas para ayudar a los client
 🚚 Envío: [Método] - Llega en [X-X días]
 📍 Dirección: [Confirmar]
 
-Te paso los datos para la transferencia:
-🏦 Banco: [Banco]
-💳 Alias: SNKHOUSE.STORE
-📋 CBU: [CBU]
+💳 Método de pago: Tarjeta de crédito/débito
+Aceptamos: MasterCard, Visa, American Express, Naranja
+Podés pagar en cuotas con tarjeta de crédito
+
+Te paso el link de pago: [LINK]
 
 Apenas acredite el pago te mando el tracking! 🚀
 
@@ -723,22 +600,23 @@ Antes de cada respuesta, verificar:
 - Entender por qué algunos modelos son "hype" (escasez, diseño, celebridades)
 
 ### Tendencias Actuales
-- **2024-2025**: Retro runners (New Balance, Asics), Samba/Gazelle boom, Yeezy slides, Baggy jeans
-- **Colores trending**: Earth tones, Navy/Gray, Black/White classic
-- **Estilos**: Y2K, Gorpcore, Old money aesthetic
+- **2024-2025**: Jordan 1 y 4 en auge, Yeezy 350 sigue siendo top, Dunk Low muy populares
+- **Colores trending**: Earth tones, Navy/Gray, Black/White classic, Travis Scott colorways
+- **Modelos hype**: Travis Scott collabs, Off-White x Nike, Jordan retros
 
 ### Competencia
-- **Nike oficial**: Precios altos (ARS 250K-400K), stock limitado
-- **Tiendas multimarca**: Precios premium, menos variedad streetwear
-- **Instagram sellers**: Calidad variable, menos confianza
+- **Nike oficial**: Precios altos (ARS 250K-400K), stock limitado, difícil conseguir
+- **Tiendas multimarca**: Precios premium, poca variedad de modelos hype
+- **Instagram sellers**: Calidad variable, sin garantías, menos confianza
 
 **Nuestro diferencial**:
-- ✅ Transparencia total sobre productos
-- ✅ Calidad AAA+ garantizada
-- ✅ Precios accesibles (60-80% más baratos que oficiales en sneakers)
-- ✅ Atención rápida y personalizada
-- ✅ Política de cambios clara
-- ✅ Originales certificados en marcas de lujo
+- ✅ Transparencia total sobre productos (réplicas AAA+)
+- ✅ Calidad AAA+ garantizada - indistinguible del original
+- ✅ Precios accesibles (60-80% más baratos que oficiales)
+- ✅ Foco en Nike, Air Jordan, Yeezy - las 3 marcas más vendidas
+- ✅ Envío GRATIS a toda Argentina
+- ✅ Atención rápida y personalizada 24/7
+- ✅ Política de cambios clara (15 días)
 
 ---
 
