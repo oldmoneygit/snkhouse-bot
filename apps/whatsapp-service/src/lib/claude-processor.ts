@@ -99,10 +99,15 @@ export async function processMessageWithClaude({
     const systemPromptTokensEstimate = systemPrompt.length / 4;
     console.log(`📊 [Claude Processor] System prompt size: ~${Math.round(systemPromptTokensEstimate)} tokens (will be cached by Anthropic)`);
 
+    // Log request start
+    console.log(`🚀 [Claude Processor] Starting Claude API call with ${conversationHistory.length} history messages`);
+
     // First call - may return tool calls
     let result = await generateText({
       model: anthropic('claude-3-5-haiku-latest'), // Using Haiku - cheapest option ($0.80 vs $3/1M) with great tool calling
       system: systemPrompt,
+      maxRetries: 5, // Increase retries from 3 to 5 for overload errors
+      abortSignal: AbortSignal.timeout(30000), // 30 second timeout
       messages: [
         ...conversationHistory, // Include conversation history for context
         {
@@ -332,6 +337,8 @@ export async function processMessageWithClaude({
         const continueResult = await generateText({
           model: anthropic('claude-3-5-haiku-latest'),
           system: systemPrompt,
+          maxRetries: 5, // Increase retries from 3 to 5 for overload errors
+          abortSignal: AbortSignal.timeout(30000), // 30 second timeout
           messages: continueMessages
         });
 
@@ -386,10 +393,23 @@ export async function processMessageWithClaude({
     return responseText;
 
   } catch (error: any) {
-    console.error('❌ [Claude Processor] Error:', {
+    // Enhanced error logging with more details
+    const errorDetails = {
       message: error.message,
-      stack: error.stack?.substring(0, 500)
-    });
+      name: error.name,
+      cause: error.cause?.message || null,
+      stack: error.stack?.substring(0, 500),
+      isOverloaded: error.message?.includes('Overloaded') || error.message?.includes('overloaded'),
+      isRetryError: error.name === 'AI_RetryError'
+    };
+
+    console.error('❌ [Claude Processor] Error:', errorDetails);
+
+    // Log specific guidance for Overloaded errors
+    if (errorDetails.isOverloaded) {
+      console.error('⚠️ [Claude Processor] Anthropic API is overloaded. This usually resolves within seconds.');
+      console.error('💡 [Claude Processor] User will be asked to retry. The next attempt will likely succeed.');
+    }
 
     // Save error message to database
     try {
@@ -401,6 +421,8 @@ export async function processMessageWithClaude({
           channel: 'whatsapp',
           processor: 'claude',
           error: true,
+          error_type: error.name,
+          is_overloaded: errorDetails.isOverloaded,
           timestamp: new Date().toISOString()
         }
       });
@@ -408,7 +430,11 @@ export async function processMessageWithClaude({
       console.error('⚠️ [Claude Processor] Failed to save error message');
     }
 
-    // Return fallback message
+    // Return user-friendly fallback message
+    if (errorDetails.isOverloaded) {
+      return 'Disculpá, el sistema está con mucha demanda en este momento. Por favor, intentá de nuevo en unos segundos.';
+    }
+
     return 'Disculpá, tuve un problema técnico. ¿Podés intentar de nuevo en unos segundos?';
   }
 }
