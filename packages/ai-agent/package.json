@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "tsx --watch src/agent.ts",
     "test": "vitest",
-    "test:tools": "tsx src/test-with-tools.ts"
+    "test:tools": "tsx src/test-with-tools.ts",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@snkhouse/analytics": "workspace:*",

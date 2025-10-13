@@ -8,7 +8,8 @@
     "test:woo:simple": "tsx src/woocommerce/test-simple.ts",
     "test:woo:mock": "tsx src/woocommerce/test-mock.ts",
     "test:woo:diagnostic": "tsx src/woocommerce/test-auth-diagnostic.ts",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@woocommerce/woocommerce-rest-api": "^1.0.1",

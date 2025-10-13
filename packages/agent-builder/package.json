@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "tsc --watch",
     "build": "tsc",
-    "test": "echo \"No tests yet\""
+    "test": "echo \"No tests yet\"",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@openai/agents": "^0.1.0",
