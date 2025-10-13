@@ -329,14 +329,30 @@ export async function POST(request: NextRequest) {
       user_message: lastUserMessage,
     });
 
-    // Log context being passed to AI
-    console.log("🤖 [Widget API] Chamando AI com contexto:", {
-      conversation_id: activeConversationId,
-      customer_id: wooCustomerId,
-      email_sanitized: sanitizeEmail(effectiveEmail),
-      has_woo_id: !!wooCustomerId,
-      customer_supabase_id: customerRecord.id,
+    // ===== DEBUG: AI REQUEST =====
+    console.log("=== 🤖 AI REQUEST DEBUG ===");
+    console.log("📦 Context passed to AI:", {
+      conversationId: activeConversationId,
+      customerId: wooCustomerId, // WooCommerce customer_id (pode ser null)
+      customerEmail: effectiveEmail,
+      customerSupabaseId: customerRecord.id,
+      hasWooCommerceId: !!wooCustomerId,
     });
+
+    console.log(
+      "💬 Messages being sent to AI:",
+      aiMessages.map((m, idx) => ({
+        index: idx,
+        role: m.role,
+        contentPreview:
+          m.content.substring(0, 100) + (m.content.length > 100 ? "..." : ""),
+        contentLength: m.content.length,
+      })),
+    );
+
+    console.log(
+      "🔧 Tools available: search_products, get_order_status, search_customer_orders, track_shipment, etc.",
+    );
 
     const response = await generateResponseWithFallback(aiMessages, {
       conversationId: activeConversationId,
@@ -345,6 +361,16 @@ export async function POST(request: NextRequest) {
     });
 
     const aiResponseTime = Date.now() - aiStartTime;
+
+    // ===== DEBUG: AI RESPONSE =====
+    console.log("=== ✅ AI RESPONSE DEBUG ===");
+    console.log(
+      "📨 Response preview:",
+      response.content.substring(0, 200) +
+        (response.content.length > 200 ? "..." : ""),
+    );
+    console.log("🤖 Model used:", response.model);
+    console.log("⏱️ Response time:", aiResponseTime, "ms");
 
     await trackAIResponse({
       model: response.model || "unknown",
