@@ -126,10 +126,17 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
       .from('messages')
       .select('*', { count: 'exact', head: true });
 
-    // 4. Total de clientes
-    const { count: totalCustomers } = await supabaseAdmin
+    // 4. Total de clientes únicos (por telefone não-nulo)
+    const { data: customersData } = await supabaseAdmin
       .from('customers')
-      .select('*', { count: 'exact', head: true });
+      .select('phone')
+      .not('phone', 'is', null);
+
+    // Contar telefones únicos
+    const uniquePhones = new Set(
+      customersData?.map((c: { phone: string | null }) => c.phone).filter((p): p is string => p !== null)
+    );
+    const totalCustomers = uniquePhones.size;
 
     // 5. Média de mensagens por conversa
     const averageMessagesPerConversation =
