@@ -4,50 +4,131 @@ import {
   getOrderStatus,
   searchCustomerOrders,
   getOrderDetails,
-  trackShipment
-} from '@snkhouse/integrations';
-import { trackToolCall, trackProductSearch } from '@snkhouse/analytics';
+  trackShipment,
+} from "@snkhouse/integrations";
+import { trackToolCall, trackProductSearch } from "@snkhouse/analytics";
 
 // =====================================================
 // TOOLS HANDLERS - IMPLEMENTAÇÃO DAS FERRAMENTAS
 // =====================================================
 
-export async function searchProducts(query: string, limit: number = 5, conversationId?: string): Promise<string> {
-  console.log(`🔍 [Tool] Buscando productos: "${query}"`);
+export async function searchProducts(
+  query: string,
+  limit: number = 5,
+  conversationId?: string,
+): Promise<string> {
+  console.log(`🔍 [Tool] Buscando productos (INTELLIGENT SEARCH): "${query}"`);
   const toolStartTime = Date.now();
 
   try {
     const client = getWooCommerceClient();
-    const products = await client.searchProducts(query, limit);
 
+    // ============================================
+    // ESTRATEGIA DE BUSCA INTELIGENTE (MULTI-FALLBACK)
+    // ============================================
+    const searchStrategies: string[] = [];
+    const originalQuery = query.trim();
+
+    // Estratégia 1: Query original
+    searchStrategies.push(originalQuery);
+
+    // Processar palavras
+    const words = originalQuery.toLowerCase().split(/\s+/);
+
+    // Estratégia 2: Últimas 2 palavras (padrão "Nike SB Dunk Low STRANGE LOVE")
+    if (words.length >= 2) {
+      searchStrategies.push(words.slice(-2).join(" "));
+    }
+
+    // Estratégia 3: Última palavra (se houver múltiplas)
+    if (words.length > 1) {
+      const lastWord = words[words.length - 1];
+      if (lastWord) {
+        searchStrategies.push(lastWord);
+      }
+    }
+
+    // Estratégia 4: Cada palavra individual (mínimo 3 letras)
+    words.forEach((word) => {
+      if (word.length >= 3 && !searchStrategies.includes(word)) {
+        searchStrategies.push(word);
+      }
+    });
+
+    // Estratégia 5: Primeiras 3 letras de cada palavra (mínimo 4 letras)
+    words.forEach((word) => {
+      if (word.length >= 4) {
+        const prefix = word.substring(0, 3);
+        if (!searchStrategies.includes(prefix)) {
+          searchStrategies.push(prefix);
+        }
+      }
+    });
+
+    console.log(`📋 [Tool] Search strategies: ${searchStrategies.join(" → ")}`);
+
+    // Tentar cada estratégia até encontrar resultados
+    let products: WooCommerceProduct[] = [];
+    let usedStrategy = "";
+
+    for (const strategy of searchStrategies) {
+      console.log(`🔍 [Tool] Trying strategy: "${strategy}"`);
+      products = await client.searchProducts(strategy, limit);
+
+      if (products.length > 0) {
+        usedStrategy = strategy;
+        console.log(
+          `✅ [Tool] SUCCESS with strategy: "${strategy}" (${products.length} products found)`,
+        );
+        break;
+      }
+
+      console.log(`❌ [Tool] Strategy "${strategy}" returned 0 products`);
+    }
+
+    // Se não encontrou nada com nenhuma estratégia
     if (products.length === 0) {
-      return `No encontré productos para "${query}". Podés intentar con otros términos de búsqueda.`;
+      console.log("❌ [Tool] All strategies failed - no products found");
+      return `No encontré productos para "${query}".
+
+Te recomiendo:
+🔍 Explorá nuestro catálogo completo en: https://snkhouse.com
+📱 O contactanos para que te ayudemos a encontrar lo que buscás
+📧 Email: contacto@snkhouse.com
+📸 Instagram: @snkhouse.ar`;
     }
 
     // Formatar resultados para a IA
-    const formatted = products.map((p, i) => {
-      const stock = p.stock_status === 'instock' ? '✅ En stock' : '❌ Sin stock';
-      const price = p.price ? `$${parseFloat(p.price).toLocaleString('es-AR')}` : 'Precio no disponible';
-      const sale = p.on_sale ? ' 🔥 EN OFERTA' : '';
-      
-      return `${i + 1}. **${p.name}**${sale}
+    const formatted = products
+      .map((p, i) => {
+        const stock =
+          p.stock_status === "instock" ? "✅ En stock" : "❌ Sin stock";
+        const price = p.price
+          ? `$${parseFloat(p.price).toLocaleString("es-AR")}`
+          : "Precio no disponible";
+        const sale = p.on_sale ? " 🔥 EN OFERTA" : "";
+
+        return `${i + 1}. **${p.name}**${sale}
    - ID: ${p.id}
    - Precio: ${price}
    - Stock: ${stock}
    - Link: ${p.permalink}`;
-    }).join('\n\n');
+      })
+      .join("\n\n");
 
-    console.log(`✅ [Tool] ${products.length} productos encontrados`);
+    console.log(
+      `✅ [Tool] ${products.length} productos encontrados con estrategia: "${usedStrategy}"`,
+    );
 
     // TRACKING: Tool Call & Product Search
     if (conversationId) {
       const executionTime = Date.now() - toolStartTime;
       await trackToolCall({
-        tool_name: 'search_products',
-        parameters: { query, limit },
+        tool_name: "search_products",
+        parameters: { query, limit, strategy_used: usedStrategy },
         execution_time_ms: executionTime,
         success: true,
-        conversation_id: conversationId
+        conversation_id: conversationId,
       });
 
       // Track cada produto encontrado
@@ -56,34 +137,36 @@ export async function searchProducts(query: string, limit: number = 5, conversat
           product_id: product.id,
           product_name: product.name,
           search_query: query,
-          tool_used: 'search_products',
-          conversation_id: conversationId
+          tool_used: "search_products",
+          conversation_id: conversationId,
         });
       }
     }
 
-    return `Encontré ${products.length} productos:\n\n${formatted}`;
-
+    return `Encontré ${products.length} producto${products.length > 1 ? "s" : ""} para "${query}":\n\n${formatted}`;
   } catch (error: any) {
-    console.error('❌ [Tool] Error en searchProducts:', error.message);
+    console.error("❌ [Tool] Error en searchProducts:", error.message);
 
     // TRACKING: Tool Call Failed
     if (conversationId) {
       await trackToolCall({
-        tool_name: 'search_products',
+        tool_name: "search_products",
         parameters: { query, limit },
         execution_time_ms: Date.now() - toolStartTime,
         success: false,
         error: error.message,
-        conversation_id: conversationId
+        conversation_id: conversationId,
       });
     }
 
-    return 'Hubo un error al buscar productos. Por favor intentá de nuevo.';
+    return "Hubo un error al buscar productos. Por favor intentá de nuevo.";
   }
 }
 
-export async function getProductDetails(productId: number, conversationId?: string): Promise<string> {
+export async function getProductDetails(
+  productId: number,
+  conversationId?: string,
+): Promise<string> {
   console.log(`🔍 [Tool] Obteniendo detalles del producto ID: ${productId}`);
   const toolStartTime = Date.now();
 
@@ -96,23 +179,30 @@ export async function getProductDetails(productId: number, conversationId?: stri
     }
 
     // Formatar detalhes
-    const stock = product.stock_status === 'instock' ? '✅ En stock' : '❌ Sin stock';
-    const price = product.price ? `$${parseFloat(product.price).toLocaleString('es-AR')}` : 'Consultar';
-    const regularPrice = product.regular_price ? `$${parseFloat(product.regular_price).toLocaleString('es-AR')}` : price;
-    const sale = product.on_sale ? `\n   - Precio anterior: ${regularPrice}\n   - 🔥 OFERTA: ${price}` : '';
-    const categories = product.categories.map(c => c.name).join(', ');
-    const description = product.short_description 
-      ? product.short_description.replace(/<[^>]*>/g, '').substring(0, 200)
-      : 'Sin descripción';
+    const stock =
+      product.stock_status === "instock" ? "✅ En stock" : "❌ Sin stock";
+    const price = product.price
+      ? `$${parseFloat(product.price).toLocaleString("es-AR")}`
+      : "Consultar";
+    const regularPrice = product.regular_price
+      ? `$${parseFloat(product.regular_price).toLocaleString("es-AR")}`
+      : price;
+    const sale = product.on_sale
+      ? `\n   - Precio anterior: ${regularPrice}\n   - 🔥 OFERTA: ${price}`
+      : "";
+    const categories = product.categories.map((c) => c.name).join(", ");
+    const description = product.short_description
+      ? product.short_description.replace(/<[^>]*>/g, "").substring(0, 200)
+      : "Sin descripción";
 
     const details = `**${product.name}**
 
 📋 Detalles:
-   - SKU: ${product.sku || 'N/A'}
+   - SKU: ${product.sku || "N/A"}
    - Categorías: ${categories}${sale}
-   ${!product.on_sale ? `- Precio: ${price}` : ''}
+   ${!product.on_sale ? `- Precio: ${price}` : ""}
    - Stock: ${stock}
-   ${product.stock_quantity ? `- Cantidad disponible: ${product.stock_quantity}` : ''}
+   ${product.stock_quantity ? `- Cantidad disponible: ${product.stock_quantity}` : ""}
    
 📝 Descripción:
 ${description}
@@ -125,39 +215,38 @@ ${description}
     if (conversationId) {
       const executionTime = Date.now() - toolStartTime;
       await trackToolCall({
-        tool_name: 'get_product_details',
+        tool_name: "get_product_details",
         parameters: { productId },
         execution_time_ms: executionTime,
         success: true,
-        conversation_id: conversationId
+        conversation_id: conversationId,
       });
 
       await trackProductSearch({
         product_id: product.id,
         product_name: product.name,
-        tool_used: 'get_product_details',
-        conversation_id: conversationId
+        tool_used: "get_product_details",
+        conversation_id: conversationId,
       });
     }
 
     return details;
-
   } catch (error: any) {
-    console.error('❌ [Tool] Error en getProductDetails:', error.message);
+    console.error("❌ [Tool] Error en getProductDetails:", error.message);
 
     // TRACKING: Tool Call Failed
     if (conversationId) {
       await trackToolCall({
-        tool_name: 'get_product_details',
+        tool_name: "get_product_details",
         parameters: { productId },
         execution_time_ms: Date.now() - toolStartTime,
         success: false,
         error: error.message,
-        conversation_id: conversationId
+        conversation_id: conversationId,
       });
     }
 
-    return 'Hubo un error al obtener los detalles del producto.';
+    return "Hubo un error al obtener los detalles del producto.";
   }
 }
 
@@ -172,16 +261,16 @@ export async function checkStock(productId: number): Promise<string> {
       return `No encontré el producto con ID ${productId}.`;
     }
 
-    const inStock = product.stock_status === 'instock';
+    const inStock = product.stock_status === "instock";
     const quantity = product.stock_quantity;
 
     let stockMessage = `**${product.name}**\n\n`;
 
     if (inStock) {
-      stockMessage += quantity 
+      stockMessage += quantity
         ? `✅ **Disponible** - Hay ${quantity} unidades en stock`
         : `✅ **Disponible** - En stock`;
-    } else if (product.stock_status === 'onbackorder') {
+    } else if (product.stock_status === "onbackorder") {
       stockMessage += `⏳ **Por encargo** - Se puede pedir pero demora en llegar`;
     } else {
       stockMessage += `❌ **Sin stock** - No disponible en este momento`;
@@ -189,38 +278,36 @@ export async function checkStock(productId: number): Promise<string> {
 
     console.log(`✅ [Tool] Stock verificado: ${product.stock_status}`);
     return stockMessage;
-
   } catch (error: any) {
-    console.error('❌ [Tool] Error en checkStock:', error.message);
-    return 'Hubo un error al verificar el stock.';
+    console.error("❌ [Tool] Error en checkStock:", error.message);
+    return "Hubo un error al verificar el stock.";
   }
 }
 
 export async function getCategories(): Promise<string> {
-  console.log('🔍 [Tool] Listando categorías');
+  console.log("🔍 [Tool] Listando categorías");
 
   try {
     const client = getWooCommerceClient();
     const categories = await client.getCategories();
 
     if (categories.length === 0) {
-      return 'No encontré categorías disponibles.';
+      return "No encontré categorías disponibles.";
     }
 
     // Filtrar categorias principais (parent = 0)
-    const mainCategories = categories.filter(c => c.parent === 0);
+    const mainCategories = categories.filter((c) => c.parent === 0);
 
     const formatted = mainCategories
       .slice(0, 10) // Primeiras 10 categorias
       .map((c, i) => `${i + 1}. ${c.name} (${c.count} productos)`)
-      .join('\n');
+      .join("\n");
 
     console.log(`✅ [Tool] ${mainCategories.length} categorías encontradas`);
     return `Categorías disponibles:\n\n${formatted}`;
-
   } catch (error: any) {
-    console.error('❌ [Tool] Error en getCategories:', error.message);
-    return 'Hubo un error al listar las categorías.';
+    console.error("❌ [Tool] Error en getCategories:", error.message);
+    return "Hubo un error al listar las categorías.";
   }
 }
 
@@ -229,61 +316,71 @@ export async function getProductsOnSale(limit: number = 10): Promise<string> {
 
   try {
     const client = getWooCommerceClient();
-    const products = await client.getProducts({ 
-      on_sale: true, 
-      per_page: limit 
+    const products = await client.getProducts({
+      on_sale: true,
+      per_page: limit,
     });
 
     if (products.length === 0) {
-      return 'No hay productos en oferta en este momento.';
+      return "No hay productos en oferta en este momento.";
     }
 
-    const formatted = products.map((p, i) => {
-      const regularPrice = parseFloat(p.regular_price).toLocaleString('es-AR');
-      const salePrice = parseFloat(p.price).toLocaleString('es-AR');
-      const discount = Math.round(((parseFloat(p.regular_price) - parseFloat(p.price)) / parseFloat(p.regular_price)) * 100);
+    const formatted = products
+      .map((p, i) => {
+        const regularPrice = parseFloat(p.regular_price).toLocaleString(
+          "es-AR",
+        );
+        const salePrice = parseFloat(p.price).toLocaleString("es-AR");
+        const discount = Math.round(
+          ((parseFloat(p.regular_price) - parseFloat(p.price)) /
+            parseFloat(p.regular_price)) *
+            100,
+        );
 
-      return `${i + 1}. **${p.name}**
+        return `${i + 1}. **${p.name}**
    - Antes: $${regularPrice}
    - Ahora: $${salePrice}
    - Descuento: ${discount}% OFF 🔥
    - ID: ${p.id}`;
-    }).join('\n\n');
+      })
+      .join("\n\n");
 
     console.log(`✅ [Tool] ${products.length} productos en oferta`);
     return `🔥 Productos en oferta:\n\n${formatted}`;
-
   } catch (error: any) {
-    console.error('❌ [Tool] Error en getProductsOnSale:', error.message);
-    return 'Hubo un error al buscar productos en oferta.';
+    console.error("❌ [Tool] Error en getProductsOnSale:", error.message);
+    return "Hubo un error al buscar productos en oferta.";
   }
 }
 
 // Tool executor - chama a função correta baseado no nome
-export async function executeToolCall(toolName: string, args: any): Promise<string> {
+export async function executeToolCall(
+  toolName: string,
+  args: any,
+): Promise<string> {
   console.log(`🔧 [Tool] Executando: ${toolName}`, args);
 
   switch (toolName) {
-    case 'search_products':
+    case "search_products":
       return searchProducts(args.query, args.limit);
-    
-    case 'get_product_details':
+
+    case "get_product_details":
       return getProductDetails(args.product_id);
-    
-    case 'check_stock':
+
+    case "check_stock":
       return checkStock(args.product_id);
-    
-    case 'get_categories':
+
+    case "get_categories":
       return getCategories();
-    
-    case 'get_products_on_sale':
+
+    case "get_products_on_sale":
       return getProductsOnSale(args.limit);
 
     // =====================================================
     // ORDERS TOOLS - SNKH-16.5
     // =====================================================
 
-    case 'get_order_status': {
+    case "get_order_status": {
       const startTime = Date.now();
       try {
         const { order_id, customer_id } = args;
@@ -291,11 +388,11 @@ export async function executeToolCall(toolName: string, args: any): Promise<stri
 
         const executionTime = Date.now() - startTime;
         await trackToolCall({
-          tool_name: 'get_order_status',
-          parameters: { order_id, customer_id: 'cust_***' },
+          tool_name: "get_order_status",
+          parameters: { order_id, customer_id: "cust_***" },
           execution_time_ms: executionTime,
           success: true,
-          conversation_id: args.conversation_id
+          conversation_id: args.conversation_id,
         });
 
         // Formatar resposta para IA
@@ -303,18 +400,18 @@ export async function executeToolCall(toolName: string, args: any): Promise<stri
       } catch (error: any) {
         const executionTime = Date.now() - startTime;
         await trackToolCall({
-          tool_name: 'get_order_status',
-          parameters: { order_id: args.order_id, customer_id: 'cust_***' },
+          tool_name: "get_order_status",
+          parameters: { order_id: args.order_id, customer_id: "cust_***" },
           execution_time_ms: executionTime,
           success: false,
           error: error.message,
-          conversation_id: args.conversation_id
+          conversation_id: args.conversation_id,
         });
         return `Error: ${error.message}`;
       }
     }
 
-    case 'search_customer_orders': {
+    case "search_customer_orders": {
       const startTime = Date.now();
       try {
         const { email_or_customer_id, limit = 5 } = args;
@@ -322,32 +419,35 @@ export async function executeToolCall(toolName: string, args: any): Promise<stri
 
         const executionTime = Date.now() - startTime;
         await trackToolCall({
-          tool_name: 'search_customer_orders',
+          tool_name: "search_customer_orders",
           parameters: {
-            identifier: typeof email_or_customer_id === 'number' ? 'cust_***' : 'email_***',
-            limit
+            identifier:
+              typeof email_or_customer_id === "number"
+                ? "cust_***"
+                : "email_***",
+            limit,
           },
           execution_time_ms: executionTime,
           success: true,
-          conversation_id: args.conversation_id
+          conversation_id: args.conversation_id,
         });
 
         return JSON.stringify(result, null, 2);
       } catch (error: any) {
         const executionTime = Date.now() - startTime;
         await trackToolCall({
-          tool_name: 'search_customer_orders',
-          parameters: { identifier: '***', limit: args.limit },
+          tool_name: "search_customer_orders",
+          parameters: { identifier: "***", limit: args.limit },
           execution_time_ms: executionTime,
           success: false,
           error: error.message,
-          conversation_id: args.conversation_id
+          conversation_id: args.conversation_id,
         });
         return `Error: ${error.message}`;
       }
     }
 
-    case 'get_order_details': {
+    case "get_order_details": {
       const startTime = Date.now();
       try {
         const { order_id, customer_id } = args;
@@ -355,29 +455,29 @@ export async function executeToolCall(toolName: string, args: any): Promise<stri
 
         const executionTime = Date.now() - startTime;
         await trackToolCall({
-          tool_name: 'get_order_details',
-          parameters: { order_id, customer_id: 'cust_***' },
+          tool_name: "get_order_details",
+          parameters: { order_id, customer_id: "cust_***" },
           execution_time_ms: executionTime,
           success: true,
-          conversation_id: args.conversation_id
+          conversation_id: args.conversation_id,
         });
 
         return JSON.stringify(result, null, 2);
       } catch (error: any) {
         const executionTime = Date.now() - startTime;
         await trackToolCall({
-          tool_name: 'get_order_details',
-          parameters: { order_id: args.order_id, customer_id: 'cust_***' },
+          tool_name: "get_order_details",
+          parameters: { order_id: args.order_id, customer_id: "cust_***" },
           execution_time_ms: executionTime,
           success: false,
           error: error.message,
-          conversation_id: args.conversation_id
+          conversation_id: args.conversation_id,
         });
         return `Error: ${error.message}`;
       }
     }
 
-    case 'track_shipment': {
+    case "track_shipment": {
       const startTime = Date.now();
       try {
         const { order_id, customer_id } = args;
@@ -385,23 +485,23 @@ export async function executeToolCall(toolName: string, args: any): Promise<stri
 
         const executionTime = Date.now() - startTime;
         await trackToolCall({
-          tool_name: 'track_shipment',
-          parameters: { order_id, customer_id: 'cust_***' },
+          tool_name: "track_shipment",
+          parameters: { order_id, customer_id: "cust_***" },
           execution_time_ms: executionTime,
           success: true,
-          conversation_id: args.conversation_id
+          conversation_id: args.conversation_id,
         });
 
         return JSON.stringify(result, null, 2);
       } catch (error: any) {
         const executionTime = Date.now() - startTime;
         await trackToolCall({
-          tool_name: 'track_shipment',
-          parameters: { order_id: args.order_id, customer_id: 'cust_***' },
+          tool_name: "track_shipment",
+          parameters: { order_id: args.order_id, customer_id: "cust_***" },
           execution_time_ms: executionTime,
           success: false,
           error: error.message,
-          conversation_id: args.conversation_id
+          conversation_id: args.conversation_id,
         });
         return `Error: ${error.message}`;
       }
