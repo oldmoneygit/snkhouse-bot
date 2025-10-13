@@ -145,6 +145,12 @@ importers:
 
   apps/widget:
     dependencies:
+      '@ai-sdk/anthropic':
+        specifier: ^2.0.27
+        version: 2.0.27(zod@3.25.76)
+      '@ai-sdk/openai':
+        specifier: ^2.0.51
+        version: 2.0.51(zod@3.25.76)
       '@snkhouse/ai-agent':
         specifier: workspace:*
         version: link:../../packages/ai-agent
@@ -163,6 +169,9 @@ importers:
       '@types/dompurify':
         specifier: ^3.2.0
         version: 3.2.0
+      ai:
+        specifier: ^5.0.68
+        version: 5.0.68(zod@3.25.76)
       dompurify:
         specifier: ^3.3.0
         version: 3.3.0
