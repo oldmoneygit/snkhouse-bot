@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generateResponseWithFallback } from "@snkhouse/ai-agent";
+import {
+  generateResponseWithFallback,
+  buildWidgetSystemPrompt,
+} from "@snkhouse/ai-agent";
 import { supabaseAdmin } from "@snkhouse/database";
 import { trackAIRequest, trackAIResponse } from "@snkhouse/analytics";
 import { findCustomerByEmail } from "@snkhouse/integrations";
@@ -65,6 +68,12 @@ export async function POST(request: NextRequest) {
       body.conversationId.trim().length > 0
         ? body.conversationId
         : null;
+
+    // Extrair page context (se fornecido)
+    const pageContext: any = body.pageContext || undefined;
+    if (pageContext) {
+      console.log("📍 [Widget API] Page context detected:", pageContext);
+    }
 
     // 1) Buscar customer pelo email do onboarding
     let customerRecord = null;
@@ -292,7 +301,19 @@ export async function POST(request: NextRequest) {
       throw conversationMessagesError;
     }
 
+    // Construir custom system prompt para Widget
+    const widgetSystemPrompt = buildWidgetSystemPrompt({
+      hasOrdersAccess: Boolean(wooCustomerId),
+      pageContext,
+    });
+
+    console.log(
+      "🎯 [Widget API] Using custom widget system prompt",
+      `(${widgetSystemPrompt.length} characters)`,
+    );
+
     const aiMessages = [
+      { role: "system" as const, content: widgetSystemPrompt },
       ...(conversationMessages ?? []).map((msg) => ({
         role: msg.role as "user" | "assistant" | "system",
         content: msg.content,

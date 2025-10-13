@@ -8,6 +8,7 @@ export type {
   AgentContext,
 } from "./types";
 export { SYSTEM_PROMPT, buildSystemPrompt } from "./prompts";
+export { buildWidgetSystemPrompt } from "./prompts/widget-specific";
 
 // Exportar unified knowledge base (shared by Widget and WhatsApp)
 export { STORE_KNOWLEDGE_BASE } from "./knowledge/store-knowledge";

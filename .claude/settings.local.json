@@ -42,7 +42,13 @@
       "Bash(move WIDGET_ANALYSIS_REPORT_PARTE_1.md docswidget_analise)",
       "Bash(git checkout:*)",
       "Bash(test -f \"C:\\Users\\PC\\Desktop\\Ecossistema_Atendimento_SNKHOUSE\\apps\\widget\\src\\app\\api\\chat\\history\\route.ts\")",
-      "Bash(pnpm --filter @snkhouse/widget type-check)"
+      "Bash(pnpm --filter @snkhouse/widget type-check)",
+      "Bash(pnpm dev)",
+      "Bash(pnpm --filter @snkhouse/ai-agent build)",
+      "Bash(pnpm kill:ports:*)",
+      "Bash(node:*)",
+      "Bash(pnpm --filter=@snkhouse/ai-agent type-check)",
+      "Bash(npx tsc:*)"
     ],
     "deny": [],
     "ask": []

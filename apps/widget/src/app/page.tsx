@@ -286,6 +286,10 @@ export default function Widget() {
 
       const data = await response.json();
 
+      // Simular delay de digitação natural (UX improvement)
+      // Skeleton → Typing indicator → Message
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
       // Atualizar email se foi detectado um novo na conversa
       if (data.emailUpdated && data.newEmail) {
         console.log("🔄 [Widget] Email actualizado dinámicamente:", {
@@ -603,20 +607,35 @@ export default function Widget() {
                 </div>
               ))}
 
-              {/* Typing Indicator */}
+              {/* Skeleton Loading (shown while waiting for AI response) */}
+              {isLoading && !isTyping && (
+                <div className="flex justify-start gap-3 mb-4 animate-pulse-soft">
+                  {/* Avatar skeleton */}
+                  <div className="w-8 h-8 rounded-full bg-gray-200 flex-shrink-0 skeleton-shimmer"></div>
+
+                  {/* Content skeleton */}
+                  <div className="flex-1 space-y-2 max-w-xs">
+                    <div className="h-4 bg-gray-200 rounded w-3/4 skeleton-shimmer"></div>
+                    <div className="h-4 bg-gray-200 rounded w-full skeleton-shimmer"></div>
+                    <div className="h-4 bg-gray-200 rounded w-5/6 skeleton-shimmer"></div>
+                  </div>
+                </div>
+              )}
+
+              {/* Typing Indicator (shown after skeleton, simulating natural typing) */}
               {isTyping && (
-                <div className="flex justify-start animate-fadeIn">
+                <div className="flex justify-start animate-fadeInSlide">
                   <div className="bg-white border border-gray-200 rounded-2xl rounded-bl-md p-4 shadow-sm">
                     <div className="flex items-center space-x-2">
                       <div className="flex space-x-1">
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce-soft"></div>
                         <div
-                          className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                          style={{ animationDelay: "0.1s" }}
+                          className="w-2 h-2 bg-gray-400 rounded-full animate-bounce-soft"
+                          style={{ animationDelay: "0.15s" }}
                         ></div>
                         <div
-                          className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                          style={{ animationDelay: "0.2s" }}
+                          className="w-2 h-2 bg-gray-400 rounded-full animate-bounce-soft"
+                          style={{ animationDelay: "0.3s" }}
                         ></div>
                       </div>
                       <span className="text-xs text-gray-500">
