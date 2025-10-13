@@ -18,6 +18,7 @@ export const STORE_KNOWLEDGE_BASE = `# 📚 KNOWLEDGE BASE COMPLETA - SNKHOUSE A
 **Localización**: Buenos Aires, Argentina
 **Mercado Actual**: 🇦🇷 Argentina (cobertura total del país)
 **Próxima Expansión**: 🇲🇽 México (próximamente)
+**Empresa Legal**: JLI ECOM LLC (EIN: 35-2880148) - Registrada en Montana, EE.UU.
 **Idioma principal**: Espanhol argentino ("che", "vos", "boludo" casual)
 **Envío**: GRATIS a todo Argentina
 

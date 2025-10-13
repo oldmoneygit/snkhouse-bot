@@ -6,7 +6,6 @@ import {
   AgentContext,
 } from "./types";
 import { buildSystemPrompt } from "./prompts";
-import { enrichPromptWithFAQs } from "./knowledge";
 import { TOOLS_DEFINITIONS } from "./tools/definitions";
 import { executeToolCall } from "./tools/handlers";
 
@@ -72,22 +71,12 @@ export async function generateWithOpenAI(
   console.log("🔧 [OpenAI] Tools disponíveis:", TOOLS_DEFINITIONS.length);
 
   try {
-    // Build dynamic system prompt from Knowledge Base
-    const baseSystemPrompt = buildSystemPrompt({
+    // Build dynamic system prompt from unified Knowledge Base (same as WhatsApp)
+    const systemPrompt = buildSystemPrompt({
       hasOrdersAccess: Boolean(runtimeContext.customerId),
     });
 
-    // Enrich prompt with relevant FAQs based on user's last message
-    const lastUserMessage = messages
-      .filter((m) => m.role === "user")
-      .slice(-1)[0];
-    const systemPrompt = lastUserMessage
-      ? enrichPromptWithFAQs(lastUserMessage.content, baseSystemPrompt)
-      : baseSystemPrompt;
-
-    console.log(
-      "[OpenAI] System prompt enriched with FAQs from Knowledge Base",
-    );
+    console.log("[OpenAI] System prompt built from unified Knowledge Base");
 
     if (!runtimeContext.customerId) {
       console.log(

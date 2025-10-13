@@ -1,11 +1,14 @@
 /**
- * SYSTEM PROMPT BUILDER - SNKHOUSE BOT
+ * SYSTEM PROMPT BUILDER - SNKHOUSE BOT (WhatsApp)
  *
  * Este arquivo constrói o prompt do sistema para Claude AI.
  * Otimizado para prompt caching (coloca KB primeiro = ~4096 tokens cacheados).
+ *
+ * IMPORTANTE: Usa a MESMA knowledge base que o Widget para garantir
+ * consistência total entre todos os canais (WhatsApp + Widget).
  */
 
-import { STORE_KNOWLEDGE_BASE } from "./store-knowledge";
+import { STORE_KNOWLEDGE_BASE } from "@snkhouse/ai-agent";
 
 /**
  * Constrói o prompt do sistema completo com Knowledge Base + Instruções
