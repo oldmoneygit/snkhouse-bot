@@ -198,14 +198,28 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
       .sort((a, b) => b.conversationCount - a.conversationCount)
       .slice(0, 5);
 
-    // 9. Conversas por status
-    const { data: statusData } = await supabaseAdmin
+    // 9. Conversas por status (classificação dinâmica baseada em atividade)
+    const { data: conversationsWithLastMessage } = await supabaseAdmin
       .from('conversations')
-      .select('status');
+      .select('id, updated_at');
 
     const statusMap = new Map<string, number>();
-    statusData?.forEach((conv: ConversationStatus) => {
-      const status = conv.status || 'unknown';
+    const now = Date.now();
+    const oneDayAgo = now - 24 * 60 * 60 * 1000;
+    const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000;
+
+    conversationsWithLastMessage?.forEach((conv: { id: string; updated_at: string }) => {
+      const lastUpdate = new Date(conv.updated_at).getTime();
+
+      let status: string;
+      if (lastUpdate >= oneDayAgo) {
+        status = 'active'; // Ativa nas últimas 24h
+      } else if (lastUpdate >= sevenDaysAgo) {
+        status = 'resolved'; // Sem atividade 1-7 dias
+      } else {
+        status = 'archived'; // Sem atividade há mais de 7 dias
+      }
+
       statusMap.set(status, (statusMap.get(status) || 0) + 1);
     });
 
