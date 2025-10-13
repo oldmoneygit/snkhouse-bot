@@ -18,6 +18,9 @@ dist/
 .next/
 out/
 
+# TypeScript Build Info
+*.tsbuildinfo
+
 # Environment Variables (CRÍTICO - NUNCA COMMITAR)
 .env
 .env.local
@@ -98,3 +101,8 @@ backup/
 # Documentation com secrets (se necessário)
 docs/*-secrets.md
 docs/KEYS.md
+
+# MCP Configuration (pode conter API keys locais)
+claude_desktop_config.json
+.claude/mcp.json
+mcp.json

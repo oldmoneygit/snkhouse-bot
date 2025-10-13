@@ -19,11 +19,13 @@ Isso vai matar todos os processos nas portas 3001 e 3002 automaticamente!
 ## 🪟 Solução Manual - Windows
 
 ### Método 1: PowerShell Script
+
 ```powershell
-.\kill-ports.ps1
+.\scripts\setup\kill-ports.ps1
 ```
 
 ### Método 2: Comandos Manuais
+
 ```powershell
 # Ver o que está rodando na porta 3002
 netstat -ano | findstr :3002
@@ -44,11 +46,13 @@ taskkill /F /PID <PID>
 ## 🐧 Solução Manual - Linux/Mac
 
 ### Método 1: Shell Script
+
 ```bash
-./kill-ports.sh
+./scripts/setup/kill-ports.sh
 ```
 
 ### Método 2: Comandos Manuais
+
 ```bash
 # Ver o que está rodando na porta 3002
 lsof -i :3002
@@ -85,6 +89,7 @@ pnpm dev:widget
 ## 🔍 Verificar se as Portas Estão Livres
 
 ### Windows
+
 ```powershell
 netstat -ano | findstr :3001
 netstat -ano | findstr :3002
@@ -93,6 +98,7 @@ netstat -ano | findstr :3002
 Se não retornar nada, as portas estão livres! ✅
 
 ### Linux/Mac
+
 ```bash
 lsof -i :3001
 lsof -i :3002
@@ -104,10 +110,10 @@ Se retornar erro ou nada, as portas estão livres! ✅
 
 ## 📊 Portas Usadas no Projeto
 
-| App | Porta | Comando |
-|-----|-------|---------|
-| Admin Dashboard | 3001 | `pnpm dev:admin` |
-| Widget | 3002 | `pnpm dev:widget` |
+| App             | Porta | Comando           |
+| --------------- | ----- | ----------------- |
+| Admin Dashboard | 3001  | `pnpm dev:admin`  |
+| Widget          | 3002  | `pnpm dev:widget` |
 
 ---
 
@@ -116,6 +122,7 @@ Se retornar erro ou nada, as portas estão livres! ✅
 ### "Module '@snkhouse/admin' not found"
 
 **Solução**:
+
 ```bash
 pnpm install
 ```
@@ -123,6 +130,7 @@ pnpm install
 ### Build falha
 
 **Solução**:
+
 ```bash
 # Limpar node_modules e .next
 rm -rf apps/*/node_modules apps/*/.next
@@ -137,6 +145,7 @@ pnpm dev
 ### Nenhum dos métodos funcionou
 
 **Solução Drástica**:
+
 ```bash
 # 1. Pare TODOS os processos Node.js
 

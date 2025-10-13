@@ -4,7 +4,8 @@
     "outDir": "dist",
     "baseUrl": ".",
     "paths": {
-      "@snkhouse/database": ["../database/src"]
+      "@snkhouse/database": ["../database/src"],
+      "@snkhouse/integrations": ["../integrations/src"]
     }
   },
   "include": ["src/**/*"],

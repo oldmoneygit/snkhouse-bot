@@ -1,16 +1,21 @@
-import { supabaseAdmin } from '@snkhouse/database';
-import { getAIPerformanceMetrics, getWooCommerceMetrics } from './events/aggregator';
+import { supabaseAdmin } from "@snkhouse/database";
+import {
+  getAIPerformanceMetrics,
+  getWooCommerceMetrics,
+} from "./events/aggregator";
 
 /**
  * Conversation data from Supabase with customer relation
  */
 interface ConversationWithCustomer {
   customer_id: string;
-  customers: {
-    id: string;
-    name: string | null;
-    email: string;
-  }[] | null;
+  customers:
+    | {
+        id: string;
+        name: string | null;
+        email: string;
+      }[]
+    | null;
   updated_at: string;
 }
 
@@ -32,7 +37,7 @@ interface MessageData {
  * Message data with role for response time calculation
  */
 interface MessageWithRole {
-  role: 'user' | 'assistant' | 'system';
+  role: "user" | "assistant" | "system";
   created_at: string;
   conversation_id: string;
 }
@@ -113,34 +118,36 @@ export interface DashboardMetrics {
  */
 export async function getDashboardMetrics(): Promise<DashboardMetrics> {
   try {
-    console.log('📊 [Analytics] Coletando métricas do dashboard...');
+    console.log("📊 [Analytics] Coletando métricas do dashboard...");
 
     // 1. Total de conversas
     const { count: totalConversations } = await supabaseAdmin
-      .from('conversations')
-      .select('*', { count: 'exact', head: true });
+      .from("conversations")
+      .select("*", { count: "exact", head: true });
 
     // 2. Conversas ativas (ativas na última 1 hora)
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
     const { count: activeConversations } = await supabaseAdmin
-      .from('conversations')
-      .select('*', { count: 'exact', head: true })
-      .gte('updated_at', oneHourAgo);
+      .from("conversations")
+      .select("*", { count: "exact", head: true })
+      .gte("updated_at", oneHourAgo);
 
     // 3. Total de mensagens
     const { count: totalMessages } = await supabaseAdmin
-      .from('messages')
-      .select('*', { count: 'exact', head: true });
+      .from("messages")
+      .select("*", { count: "exact", head: true });
 
     // 4. Total de clientes únicos (por telefone não-nulo)
     const { data: customersData } = await supabaseAdmin
-      .from('customers')
-      .select('phone')
-      .not('phone', 'is', null);
+      .from("customers")
+      .select("phone")
+      .not("phone", "is", null);
 
     // Contar telefones únicos
     const uniquePhones = new Set(
-      customersData?.map((c: { phone: string | null }) => c.phone).filter((p): p is string => p !== null)
+      customersData
+        ?.map((c: { phone: string | null }) => c.phone)
+        .filter((p): p is string => p !== null),
     );
     const totalCustomers = uniquePhones.size;
 
@@ -151,33 +158,38 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
         : 0;
 
     // 6. Conversas nas últimas 24h
-    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const twentyFourHoursAgo = new Date(
+      Date.now() - 24 * 60 * 60 * 1000,
+    ).toISOString();
     const { count: conversationsLast24h } = await supabaseAdmin
-      .from('conversations')
-      .select('*', { count: 'exact', head: true })
-      .gte('created_at', twentyFourHoursAgo);
+      .from("conversations")
+      .select("*", { count: "exact", head: true })
+      .gte("created_at", twentyFourHoursAgo);
 
     // 7. Mensagens nas últimas 24h
     const { count: messagesLast24h } = await supabaseAdmin
-      .from('messages')
-      .select('*', { count: 'exact', head: true })
-      .gte('created_at', twentyFourHoursAgo);
+      .from("messages")
+      .select("*", { count: "exact", head: true })
+      .gte("created_at", twentyFourHoursAgo);
 
     // 8. Top 5 clientes mais ativos
     const { data: topCustomersData } = await supabaseAdmin
-      .from('conversations')
-      .select('customer_id, customers(id, name, email), updated_at')
-      .not('customer_id', 'is', null)
-      .order('updated_at', { ascending: false });
+      .from("conversations")
+      .select("customer_id, customers(id, name, email), updated_at")
+      .not("customer_id", "is", null)
+      .order("updated_at", { ascending: false });
 
     // Processar top customers
-    const customerMap = new Map<string, {
-      id: string;
-      name: string;
-      email: string;
-      conversationCount: number;
-      lastActivity: string;
-    }>();
+    const customerMap = new Map<
+      string,
+      {
+        id: string;
+        name: string;
+        email: string;
+        conversationCount: number;
+        lastActivity: string;
+      }
+    >();
 
     topCustomersData?.forEach((conv: ConversationWithCustomer) => {
       if (conv.customer_id && conv.customers && conv.customers[0]) {
@@ -191,7 +203,7 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
         } else {
           customerMap.set(conv.customer_id, {
             id: customer.id,
-            name: customer.name || 'Cliente sem nome',
+            name: customer.name || "Cliente sem nome",
             email: customer.email,
             conversationCount: 1,
             lastActivity: conv.updated_at,
@@ -206,28 +218,30 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
 
     // 9. Conversas por status (classificação dinâmica baseada em atividade)
     const { data: conversationsWithLastMessage } = await supabaseAdmin
-      .from('conversations')
-      .select('id, updated_at');
+      .from("conversations")
+      .select("id, updated_at");
 
     const statusMap = new Map<string, number>();
     const now = Date.now();
     const oneDayAgo = now - 24 * 60 * 60 * 1000;
     const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000;
 
-    conversationsWithLastMessage?.forEach((conv: { id: string; updated_at: string }) => {
-      const lastUpdate = new Date(conv.updated_at).getTime();
+    conversationsWithLastMessage?.forEach(
+      (conv: { id: string; updated_at: string }) => {
+        const lastUpdate = new Date(conv.updated_at).getTime();
 
-      let status: string;
-      if (lastUpdate >= oneDayAgo) {
-        status = 'active'; // Ativa nas últimas 24h
-      } else if (lastUpdate >= sevenDaysAgo) {
-        status = 'resolved'; // Sem atividade 1-7 dias
-      } else {
-        status = 'archived'; // Sem atividade há mais de 7 dias
-      }
+        let status: string;
+        if (lastUpdate >= oneDayAgo) {
+          status = "active"; // Ativa nas últimas 24h
+        } else if (lastUpdate >= sevenDaysAgo) {
+          status = "resolved"; // Sem atividade 1-7 dias
+        } else {
+          status = "archived"; // Sem atividade há mais de 7 dias
+        }
 
-      statusMap.set(status, (statusMap.get(status) || 0) + 1);
-    });
+        statusMap.set(status, (statusMap.get(status) || 0) + 1);
+      },
+    );
 
     const conversationsByStatus = Array.from(statusMap.entries())
       .map(([status, count]) => ({ status, count }))
@@ -235,10 +249,10 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
 
     // 10. Mensagens por hora (últimas 24h em tempo real)
     const { data: recentMessages } = await supabaseAdmin
-      .from('messages')
-      .select('created_at')
-      .gte('created_at', twentyFourHoursAgo)
-      .order('created_at', { ascending: true });
+      .from("messages")
+      .select("created_at")
+      .gte("created_at", twentyFourHoursAgo)
+      .order("created_at", { ascending: true });
 
     // Criar array com as últimas 24 horas em ordem cronológica (de 24h atrás até agora)
     const nowDate = new Date();
@@ -257,8 +271,8 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
       const msgHour = msgDate.getHours();
 
       // Encontrar o índice correspondente
-      const hourIndex = messagesByHour.findIndex(h => h.hour === msgHour);
-      if (hourIndex !== -1) {
+      const hourIndex = messagesByHour.findIndex((h) => h.hour === msgHour);
+      if (hourIndex !== -1 && messagesByHour[hourIndex]) {
         messagesByHour[hourIndex].count++;
       }
     });
@@ -266,10 +280,10 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
     // 11. Tempo médio de resposta (simplificado)
     // Calcula a diferença média entre mensagens do usuário e do assistente
     const { data: messagesForResponseTime } = await supabaseAdmin
-      .from('messages')
-      .select('role, created_at, conversation_id')
-      .gte('created_at', twentyFourHoursAgo)
-      .order('created_at', { ascending: true });
+      .from("messages")
+      .select("role, created_at, conversation_id")
+      .gte("created_at", twentyFourHoursAgo)
+      .order("created_at", { ascending: true });
 
     let totalResponseTime = 0;
     let responseCount = 0;
@@ -281,8 +295,8 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
 
         // Se anterior é user e atual é assistant, na mesma conversa
         if (
-          previous.role === 'user' &&
-          current.role === 'assistant' &&
+          previous.role === "user" &&
+          current.role === "assistant" &&
           previous.conversation_id === current.conversation_id
         ) {
           const responseTime =
@@ -295,7 +309,9 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
     }
 
     const averageResponseTime =
-      responseCount > 0 ? Math.round(totalResponseTime / responseCount / 1000) : 0; // em segundos
+      responseCount > 0
+        ? Math.round(totalResponseTime / responseCount / 1000)
+        : 0; // em segundos
 
     // 12. Métricas de IA (DADOS REAIS!)
     const aiMetrics = await getAIPerformanceMetrics();
@@ -303,7 +319,9 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
     // 13. Métricas de WooCommerce (DADOS REAIS!)
     const wooMetrics = await getWooCommerceMetrics();
 
-    console.log('✅ [Analytics] Métricas coletadas com sucesso (incluindo dados REAIS de IA e WooCommerce)');
+    console.log(
+      "✅ [Analytics] Métricas coletadas com sucesso (incluindo dados REAIS de IA e WooCommerce)",
+    );
 
     return {
       totalConversations: totalConversations || 0,
@@ -344,7 +362,7 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
       topSearchedProducts: wooMetrics.topSearchedProducts,
     };
   } catch (error) {
-    console.error('❌ [Analytics] Erro ao coletar métricas:', error);
+    console.error("❌ [Analytics] Erro ao coletar métricas:", error);
     throw error;
   }
 }

@@ -16,14 +16,14 @@ try {
 
 if (-not $ghInstalled) {
     Write-Host "📦 Instalando GitHub CLI..." -ForegroundColor Yellow
-    
+
     # Tentar winget primeiro
     try {
         winget install GitHub.cli --accept-package-agreements --accept-source-agreements --silent
         Write-Host "✅ GitHub CLI instalado via winget!" -ForegroundColor Green
         $ghInstalled = $true
     } catch {
-        Write-Host "⚠️ Winget não disponível. Use o script install-github-cli.ps1 para instalação manual." -ForegroundColor Red
+        Write-Host "⚠️ Winget não disponível. Use o script scripts\setup\install-github-cli.ps1 para instalação manual." -ForegroundColor Red
         Write-Host "Ou baixe manualmente de: https://cli.github.com/" -ForegroundColor Yellow
         Read-Host "Pressione Enter para continuar (você precisará instalar o GitHub CLI manualmente)..."
     }
@@ -33,16 +33,16 @@ if ($ghInstalled) {
     Write-Host "🔐 Configurando autenticação GitHub..." -ForegroundColor Yellow
     Write-Host "Você será redirecionado para fazer login no GitHub..." -ForegroundColor Yellow
     Start-Sleep 2
-    
+
     try {
         gh auth login --web
         Write-Host "✅ Login realizado com sucesso!" -ForegroundColor Green
     } catch {
         Write-Host "❌ Erro no login. Execute manualmente: gh auth login" -ForegroundColor Red
     }
-    
+
     Write-Host "🏷️ Criando todas as labels..." -ForegroundColor Green
-    
+
     # Comandos para criar labels
     $labelCommands = @(
         'gh label create "🔴 high-priority" --color "d73a4a" --repo oldmoneygit/snkhouse-bot',
@@ -68,7 +68,7 @@ if ($ghInstalled) {
         'gh label create "⚠️ blocker" --color "b60205" --repo oldmoneygit/snkhouse-bot',
         'gh label create "automated" --color "ededed" --repo oldmoneygit/snkhouse-bot'
     )
-    
+
     $successCount = 0
     foreach ($cmd in $labelCommands) {
         try {
@@ -79,7 +79,7 @@ if ($ghInstalled) {
             Write-Host "⚠️ Label já existe ou erro ao criar" -ForegroundColor Yellow
         }
     }
-    
+
     Write-Host "🎉 SETUP COMPLETO!" -ForegroundColor Green
     Write-Host "✅ $successCount labels criadas com sucesso!" -ForegroundColor Green
     Write-Host "🚀 Sua automação está 100% funcionando!" -ForegroundColor Green

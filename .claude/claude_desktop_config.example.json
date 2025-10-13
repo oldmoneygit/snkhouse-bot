@@ -1,0 +1,24 @@
+{
+  "mcpServers": {
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp"],
+      "env": {
+        "CONTEXT7_API_KEY": "optional-get-at-context7.com/dashboard"
+      }
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "C:\\Users\\YOUR_USERNAME\\Desktop\\Ecossistema_Atendimento_SNKHOUSE"
+      ]
+    },
+    "supabase": {
+      "transport": "http",
+      "url": "https://mcp.supabase.com/mcp?project_ref=czueuxqhmifgofuflscg"
+    }
+  },
+  "globalShortcut": "Ctrl+Space"
+}

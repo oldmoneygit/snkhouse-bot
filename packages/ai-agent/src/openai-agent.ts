@@ -1,19 +1,25 @@
-import OpenAI from 'openai';
-import { ConversationMessage, AgentResponse, AgentConfig, AgentContext } from './types';
-import { buildSystemPrompt } from './prompts';
-import { enrichPromptWithFAQs } from './knowledge';
-import { TOOLS_DEFINITIONS } from './tools/definitions';
-import { executeToolCall } from './tools/handlers';
+import OpenAI from "openai";
+import {
+  ConversationMessage,
+  AgentResponse,
+  AgentConfig,
+  AgentContext,
+} from "./types";
+import { buildSystemPrompt } from "./prompts";
+import { enrichPromptWithFAQs } from "./knowledge";
+import { TOOLS_DEFINITIONS } from "./tools/definitions";
+import { executeToolCall } from "./tools/handlers";
 
 /**
  * Sanitiza email para logs (LGPD compliance)
  */
 function sanitizeEmail(email: string): string {
-  if (!email || !email.includes('@')) return '***@***';
-  const [user, domain] = email.split('@');
-  if (!user || !domain) return '***@***';
-  const domainParts = domain.split('.');
-  const tld = domainParts.length > 0 ? domainParts[domainParts.length - 1] : '***';
+  if (!email || !email.includes("@")) return "***@***";
+  const [user, domain] = email.split("@");
+  if (!user || !domain) return "***@***";
+  const domainParts = domain.split(".");
+  const tld =
+    domainParts.length > 0 ? domainParts[domainParts.length - 1] : "***";
   return `${user[0]}***@***${tld}`;
 }
 
@@ -24,7 +30,7 @@ function getOpenAIClient() {
 }
 
 const DEFAULT_CONFIG: AgentConfig = {
-  model: 'gpt-4o-mini',
+  model: "gpt-4o-mini",
   temperature: 0.7,
   maxTokens: 1000,
 };
@@ -32,7 +38,7 @@ const DEFAULT_CONFIG: AgentConfig = {
 export async function generateWithOpenAI(
   messages: ConversationMessage[],
   config: Partial<AgentConfig> = {},
-  context: AgentContext = {}
+  context: AgentContext = {},
 ): Promise<AgentResponse> {
   const finalConfig = { ...DEFAULT_CONFIG, ...config };
   const runtimeContext: AgentContext = {
@@ -41,24 +47,29 @@ export async function generateWithOpenAI(
     customerEmail: context.customerEmail ?? null,
   };
 
-  console.log('🚀 [OpenAI] Starting OpenAI processing...');
-  console.log('🔑 [OpenAI] Checking API Key...');
+  console.log("🚀 [OpenAI] Starting OpenAI processing...");
+  console.log("🔑 [OpenAI] Checking API Key...");
 
   // Validar API Key
   if (!process.env.OPENAI_API_KEY) {
-    console.error('❌ [OpenAI] OPENAI_API_KEY not found in environment!');
-    throw new Error('OpenAI API Key is missing');
+    console.error("❌ [OpenAI] OPENAI_API_KEY not found in environment!");
+    throw new Error("OpenAI API Key is missing");
   }
 
-  if (!process.env.OPENAI_API_KEY.startsWith('sk-')) {
-    console.error('❌ [OpenAI] OPENAI_API_KEY format invalid (should start with sk-)');
-    throw new Error('OpenAI API Key format is invalid');
+  if (!process.env.OPENAI_API_KEY.startsWith("sk-")) {
+    console.error(
+      "❌ [OpenAI] OPENAI_API_KEY format invalid (should start with sk-)",
+    );
+    throw new Error("OpenAI API Key format is invalid");
   }
 
-  console.log('✅ [OpenAI] API Key found:', process.env.OPENAI_API_KEY.substring(0, 15) + '...');
-  console.log('🤖 [OpenAI] Iniciando geração com tools habilitadas...');
-  console.log('📊 [OpenAI] Mensagens no histórico:', messages.length);
-  console.log('🔧 [OpenAI] Tools disponíveis:', TOOLS_DEFINITIONS.length);
+  console.log(
+    "✅ [OpenAI] API Key found:",
+    process.env.OPENAI_API_KEY.substring(0, 15) + "...",
+  );
+  console.log("🤖 [OpenAI] Iniciando geração com tools habilitadas...");
+  console.log("📊 [OpenAI] Mensagens no histórico:", messages.length);
+  console.log("🔧 [OpenAI] Tools disponíveis:", TOOLS_DEFINITIONS.length);
 
   try {
     // Build dynamic system prompt from Knowledge Base
@@ -67,18 +78,24 @@ export async function generateWithOpenAI(
     });
 
     // Enrich prompt with relevant FAQs based on user's last message
-    const lastUserMessage = messages.filter(m => m.role === 'user').slice(-1)[0];
+    const lastUserMessage = messages
+      .filter((m) => m.role === "user")
+      .slice(-1)[0];
     const systemPrompt = lastUserMessage
       ? enrichPromptWithFAQs(lastUserMessage.content, baseSystemPrompt)
       : baseSystemPrompt;
 
-    console.log('[OpenAI] System prompt enriched with FAQs from Knowledge Base');
+    console.log(
+      "[OpenAI] System prompt enriched with FAQs from Knowledge Base",
+    );
 
     if (!runtimeContext.customerId) {
-      console.log('[OpenAI] Tools de pedidos desabilitadas (sem customer_id no contexto)');
+      console.log(
+        "[OpenAI] Tools de pedidos desabilitadas (sem customer_id no contexto)",
+      );
     }
     let currentMessages = [
-      { role: 'system' as const, content: systemPrompt },
+      { role: "system" as const, content: systemPrompt },
       ...messages,
     ];
 
@@ -92,8 +109,8 @@ export async function generateWithOpenAI(
 
       const openai = getOpenAIClient();
 
-      console.log('[OpenAI] 🕐 Calling OpenAI API...');
-      console.log('[OpenAI] 📊 Config:', {
+      console.log("[OpenAI] 🕐 Calling OpenAI API...");
+      console.log("[OpenAI] 📊 Config:", {
         model: finalConfig.model,
         messagesCount: currentMessages.length,
         toolsCount: TOOLS_DEFINITIONS.length,
@@ -108,23 +125,22 @@ export async function generateWithOpenAI(
           model: finalConfig.model,
           messages: currentMessages as any,
           tools: TOOLS_DEFINITIONS as any,
-          tool_choice: 'auto',
+          tool_choice: "auto",
           temperature: finalConfig.temperature,
           max_tokens: finalConfig.maxTokens,
         });
 
         const timeoutPromise = new Promise<never>((_, reject) => {
           setTimeout(() => {
-            reject(new Error('OpenAI API timeout after 20 seconds'));
+            reject(new Error("OpenAI API timeout after 20 seconds"));
           }, 20000);
         });
 
-        console.log('[OpenAI] ⏳ Waiting for response (20s timeout)...');
+        console.log("[OpenAI] ⏳ Waiting for response (20s timeout)...");
         response = await Promise.race([apiCall, timeoutPromise]);
-        console.log('[OpenAI] ✅ Response received from API!');
-
+        console.log("[OpenAI] ✅ Response received from API!");
       } catch (error: any) {
-        console.error('[OpenAI] ❌ API Call ERROR:', {
+        console.error("[OpenAI] ❌ API Call ERROR:", {
           name: error.name,
           message: error.message,
           apiKeyPresent: !!process.env.OPENAI_API_KEY,
@@ -133,17 +149,24 @@ export async function generateWithOpenAI(
       }
 
       const choice = response.choices[0];
+      if (!choice) {
+        throw new Error("OpenAI returned no choices");
+      }
+
       const finishReason = choice.finish_reason;
 
       console.log(`📍 [OpenAI] Finish reason: ${finishReason}`);
 
       // Se não há tool calls, retornar a resposta
-      if (finishReason === 'stop' || !choice.message.tool_calls) {
-        const content = choice.message.content || 'Sin respuesta';
-        
-        console.log('✅ [OpenAI] Resposta final gerada');
-        console.log('📝 [OpenAI] Preview:', content.substring(0, 100) + '...');
-        console.log('🎯 [OpenAI] Tokens usados:', response.usage?.total_tokens || 0);
+      if (finishReason === "stop" || !choice.message.tool_calls) {
+        const content = choice.message.content || "Sin respuesta";
+
+        console.log("✅ [OpenAI] Resposta final gerada");
+        console.log("📝 [OpenAI] Preview:", content.substring(0, 100) + "...");
+        console.log(
+          "🎯 [OpenAI] Tokens usados:",
+          response.usage?.total_tokens || 0,
+        );
 
         return {
           content,
@@ -153,7 +176,9 @@ export async function generateWithOpenAI(
       }
 
       // Executar tool calls
-      console.log(`🔧 [OpenAI] ${choice.message.tool_calls.length} tool calls detectadas`);
+      console.log(
+        `🔧 [OpenAI] ${choice.message.tool_calls.length} tool calls detectadas`,
+      );
 
       // Adicionar a mensagem do assistente (com tool calls)
       currentMessages.push(choice.message as any);
@@ -163,18 +188,29 @@ export async function generateWithOpenAI(
         const toolName = toolCall.function.name;
         const toolArgs = JSON.parse(toolCall.function.arguments);
 
-        const ORDERS_TOOLS = ['get_order_status', 'search_customer_orders', 'get_order_details', 'track_shipment'];
+        const ORDERS_TOOLS = [
+          "get_order_status",
+          "search_customer_orders",
+          "get_order_details",
+          "track_shipment",
+        ];
         if (ORDERS_TOOLS.includes(toolName)) {
           if (!toolArgs.customer_id && runtimeContext.customerId) {
             // Tem customer_id numérico, usar
             toolArgs.customer_id = runtimeContext.customerId;
-            console.log(`[OpenAI] Injetado customer_id=${runtimeContext.customerId} para tool ${toolName}`);
+            console.log(
+              `[OpenAI] Injetado customer_id=${runtimeContext.customerId} para tool ${toolName}`,
+            );
           } else if (!toolArgs.customer_id && runtimeContext.customerEmail) {
             // Não tem customer_id mas tem email, usar email como fallback
             toolArgs.customer_id = runtimeContext.customerEmail;
-            console.log(`[OpenAI] Injetado customerEmail como fallback para tool ${toolName}: ${sanitizeEmail(runtimeContext.customerEmail)}`);
+            console.log(
+              `[OpenAI] Injetado customerEmail como fallback para tool ${toolName}: ${sanitizeEmail(runtimeContext.customerEmail)}`,
+            );
           } else if (!toolArgs.customer_id) {
-            console.log('[OpenAI] Tool de pedidos sem customer_id e sem email no contexto');
+            console.log(
+              "[OpenAI] Tool de pedidos sem customer_id e sem email no contexto",
+            );
           }
         }
 
@@ -185,27 +221,26 @@ export async function generateWithOpenAI(
 
         console.log(`⚙️  [OpenAI] Executando tool: ${toolName}`, {
           has_customer_id: !!toolArgs.customer_id,
-          has_conversation_id: !!toolArgs.conversation_id
+          has_conversation_id: !!toolArgs.conversation_id,
         });
 
         try {
           const toolResult = await executeToolCall(toolName, toolArgs);
-          
+
           console.log(`✅ [OpenAI] Tool executada com sucesso`);
           console.log(`📊 [OpenAI] Resultado (${toolResult.length} chars)`);
 
           // Adicionar resultado da tool
           currentMessages.push({
-            role: 'tool' as const,
+            role: "tool" as const,
             tool_call_id: toolCall.id,
             content: toolResult,
           } as any);
-
         } catch (error: any) {
           console.error(`❌ [OpenAI] Erro na tool ${toolName}:`, error.message);
-          
+
           currentMessages.push({
-            role: 'tool' as const,
+            role: "tool" as const,
             tool_call_id: toolCall.id,
             content: `Error ejecutando ${toolName}: ${error.message}`,
           } as any);
@@ -214,15 +249,14 @@ export async function generateWithOpenAI(
     }
 
     // Se chegou no máximo de iterações
-    console.warn('⚠️  [OpenAI] Máximo de iterações atingido');
+    console.warn("⚠️  [OpenAI] Máximo de iterações atingido");
     return {
-      content: 'Disculpá, hubo un problema procesando tu consulta. ¿Podés reformular tu pregunta?',
+      content:
+        "Disculpá, hubo un problema procesando tu consulta. ¿Podés reformular tu pregunta?",
       model: finalConfig.model,
     };
-
   } catch (error: any) {
-    console.error('❌ [OpenAI] Erro:', error.message);
+    console.error("❌ [OpenAI] Erro:", error.message);
     throw new Error(`OpenAI Error: ${error.message}`);
   }
 }
-

@@ -1,0 +1,1 @@
+C:/Users/PC/Desktop/Ecossistema_Atendimento_SNKHOUSE/CLAUDE.md
