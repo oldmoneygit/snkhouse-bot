@@ -1,9 +1,9 @@
 import { anthropic } from '@ai-sdk/anthropic';
 import { generateText } from 'ai';
-import { z } from 'zod';
-import { woocommerceClient } from './woocommerce';
 import { supabaseAdmin } from '@snkhouse/database';
 import { buildSystemPrompt } from './system-prompt';
+import { getClaudeTools } from './woocommerce-tools';
+import { processMessageWithChatGPT } from './chatgpt-fallback';
 
 /**
  * Process message with Claude + WooCommerce tools
@@ -23,11 +23,13 @@ export async function processMessageWithClaude({
 
   console.log(`🤖 [Claude Processor] Processing message for conv ${conversationId}`);
 
+  // Declare conversationHistory outside try-catch so it's accessible in fallback
+  let conversationHistory: any[] = [];
+
   try {
     // ========================================
     // STEP 0: Load conversation history from database
     // ========================================
-    let conversationHistory: any[] = [];
 
     try {
       const { data: historyData, error: historyError } = await supabaseAdmin
@@ -102,6 +104,9 @@ export async function processMessageWithClaude({
     // Log request start
     console.log(`🚀 [Claude Processor] Starting Claude API call with ${conversationHistory.length} history messages`);
 
+    // Get shared WooCommerce tools
+    const tools = getClaudeTools();
+
     // First call - may return tool calls
     let result = await generateText({
       model: anthropic('claude-3-5-haiku-latest'), // Using Haiku - cheapest option ($0.80 vs $3/1M) with great tool calling
@@ -115,183 +120,7 @@ export async function processMessageWithClaude({
           content: message
         }
       ],
-      tools: {
-        // =====================================
-        // TOOL 1: Search Products
-        // =====================================
-        searchProducts: {
-          description: 'Buscar productos en el catálogo por nombre, marca o modelo (ej: "jordan 1", "nike dunk", "yeezy"). Retorna hasta {limit} productos con ID, nombre, precio, stock y URL.',
-          inputSchema: z.object({
-            query: z.string().describe('Término de búsqueda (ej: "jordan 1", "nike dunk")'),
-            limit: z.number().int().optional().default(5).describe('Cantidad máxima de resultados (default 5)')
-          }),
-          execute: async ({ query, limit }: { query: string; limit?: number }) => {
-            console.log(`[Claude Tool] searchProducts: "${query}", limit: ${limit}`);
-
-            try {
-              const response = await woocommerceClient.get('/products', {
-                params: {
-                  search: query,
-                  per_page: limit,
-                  status: 'publish',
-                  _fields: 'id,name,price,images,stock_status,permalink'
-                }
-              });
-
-              const products = response.data.map((p: any) => ({
-                id: p.id,
-                name: p.name,
-                price: `$${p.price} ARS`,
-                stock: p.stock_status === 'instock' ? 'En stock' : 'Sin stock',
-                url: p.permalink,
-                image: p.images?.[0]?.src || null
-              }));
-
-              console.log(`[Claude Tool] ✅ Found ${products.length} products`);
-
-              return {
-                found: true,
-                count: products.length,
-                products
-              };
-            } catch (error: any) {
-              console.error('[Claude Tool] ❌ searchProducts error:', error.message);
-              return {
-                found: false,
-                error: 'Error al buscar productos'
-              };
-            }
-          }
-        },
-
-        // =====================================
-        // TOOL 2: Get Order Details
-        // =====================================
-        getOrderDetails: {
-          description: 'Obtener detalles completos de un pedido usando número de pedido y email del cliente. IMPORTANTE: Requiere validación de email para proteger datos personales. Retorna estado, productos, dirección, tracking, fechas.',
-          inputSchema: z.object({
-            order_id: z.string().describe('Número del pedido (ej: "27072")'),
-            email: z.string().email().describe('Email del cliente para validación de ownership')
-          }),
-          execute: async ({ order_id, email }: { order_id: string; email: string }) => {
-            console.log(`[Claude Tool] getOrderDetails: order=${order_id}, email=${email.substring(0, 5)}***`);
-
-            try {
-              // Fetch order from WooCommerce
-              const response = await woocommerceClient.get(`/orders/${order_id}`);
-              const order = response.data;
-
-              // 🔒 CRITICAL: Validate ownership (security)
-              if (order.billing.email.toLowerCase() !== email.toLowerCase()) {
-                console.warn('[Claude Tool] ⚠️ Ownership validation failed');
-                return {
-                  found: false,
-                  error: 'No encontré ese pedido con ese email. Verificá los datos.'
-                };
-              }
-
-              // Map status to Spanish
-              const statusMap: Record<string, string> = {
-                'pending': 'Pendiente de pago',
-                'processing': 'En preparación',
-                'on-hold': 'En espera',
-                'completed': 'Entregado',
-                'cancelled': 'Cancelado',
-                'refunded': 'Reembolsado',
-                'failed': 'Pago fallido'
-              };
-
-              const orderDetails = {
-                found: true,
-                id: order.id,
-                number: order.number,
-                status: statusMap[order.status] || order.status,
-                total: `$${order.total} ARS`,
-                date: new Date(order.date_created).toLocaleDateString('es-AR'),
-                products: order.line_items.map((item: any) => ({
-                  name: item.name,
-                  quantity: item.quantity,
-                  price: `$${item.price} ARS`
-                })),
-                shipping_address: order.shipping ? {
-                  address: order.shipping.address_1,
-                  city: order.shipping.city,
-                  state: order.shipping.state,
-                  postcode: order.shipping.postcode
-                } : null,
-                tracking: order.meta_data?.find((m: any) => m.key === '_tracking_number')?.value || null
-              };
-
-              console.log(`[Claude Tool] ✅ Order found: #${order.number}, status: ${order.status}`);
-
-              return orderDetails;
-            } catch (error: any) {
-              if (error.response?.status === 404) {
-                console.warn('[Claude Tool] ⚠️ Order not found');
-                return {
-                  found: false,
-                  error: 'Pedido no encontrado'
-                };
-              }
-
-              console.error('[Claude Tool] ❌ getOrderDetails error:', error.message);
-              return {
-                found: false,
-                error: 'Error al consultar el pedido. Intentá de nuevo.'
-              };
-            }
-          }
-        },
-
-        // =====================================
-        // TOOL 3: Check Product Stock
-        // =====================================
-        checkProductStock: {
-          description: 'Verificar disponibilidad de stock de un producto específico y opcionalmente un talle. Retorna si está disponible, cantidad de unidades y precio.',
-          inputSchema: z.object({
-            product_id: z.string().describe('ID del producto (viene de searchProducts)'),
-            size: z.string().optional().describe('Talle específico a verificar (ej: "42", "M", "L")')
-          }),
-          execute: async ({ product_id, size }: { product_id: string; size?: string }) => {
-            console.log(`[Claude Tool] checkProductStock: product_id=${product_id}, size=${size || 'N/A'}`);
-
-            try {
-              const response = await woocommerceClient.get(`/products/${product_id}`);
-              const product = response.data;
-
-              const stockInfo = {
-                in_stock: product.stock_status === 'instock',
-                quantity: product.stock_quantity || null,
-                name: product.name,
-                price: `$${product.price} ARS`,
-                size_requested: size || null
-              };
-
-              // TODO: Future enhancement - check specific size from variations
-              // For now, return general stock info
-              if (size) {
-                console.log(`[Claude Tool] ⚠️ Size-specific stock not implemented yet, returning general stock`);
-              }
-
-              console.log(`[Claude Tool] ✅ Stock check: ${stockInfo.in_stock ? 'Available' : 'Out of stock'}`);
-
-              return stockInfo;
-            } catch (error: any) {
-              if (error.response?.status === 404) {
-                console.warn('[Claude Tool] ⚠️ Product not found');
-                return {
-                  error: 'Producto no encontrado'
-                };
-              }
-
-              console.error('[Claude Tool] ❌ checkProductStock error:', error.message);
-              return {
-                error: 'Error al verificar stock'
-              };
-            }
-          }
-        }
-      }
+      tools
     });
 
     // DEBUG: Log the full result object to understand what's happening
@@ -416,7 +245,7 @@ export async function processMessageWithClaude({
       await supabaseAdmin.from('messages').insert({
         conversation_id: conversationId,
         role: 'system',
-        content: `Error: ${error.message}`,
+        content: `Claude Error: ${error.message}`,
         metadata: {
           channel: 'whatsapp',
           processor: 'claude',
@@ -430,11 +259,82 @@ export async function processMessageWithClaude({
       console.error('⚠️ [Claude Processor] Failed to save error message');
     }
 
-    // Return user-friendly fallback message
-    if (errorDetails.isOverloaded) {
-      return 'Disculpá, el sistema está con mucha demanda en este momento. Por favor, intentá de nuevo en unos segundos.';
-    }
+    // ========================================
+    // 🔄 FALLBACK: Try ChatGPT if Claude fails
+    // ========================================
+    console.log('🔄 [Claude Processor] Claude failed, attempting fallback to ChatGPT (gpt-4o-mini)...');
+    console.log(`⏱️ [Claude Processor] Claude failed after ${Date.now() - startTime}ms`);
 
-    return 'Disculpá, tuve un problema técnico. ¿Podés intentar de nuevo en unos segundos?';
+    try {
+      const chatgptResponse = await processMessageWithChatGPT({
+        message,
+        conversationHistory,
+        conversationId,
+        customerPhone
+      });
+
+      console.log('✅ [Fallback] ChatGPT succeeded! Response length:', chatgptResponse.length);
+      console.log(`⏱️ [Fallback] Total time (Claude fail + ChatGPT success): ${Date.now() - startTime}ms`);
+
+      // Save ChatGPT response to database with fallback metadata
+      try {
+        await supabaseAdmin.from('messages').insert({
+          conversation_id: conversationId,
+          role: 'assistant',
+          content: chatgptResponse,
+          metadata: {
+            channel: 'whatsapp',
+            processor: 'chatgpt-fallback',
+            model: 'gpt-4o-mini',
+            claude_error: error.message,
+            claude_error_type: error.name,
+            is_fallback: true,
+            execution_time_ms: Date.now() - startTime,
+            timestamp: new Date().toISOString()
+          }
+        });
+        console.log('✅ [Fallback] ChatGPT response saved to database');
+      } catch (dbError) {
+        console.error('⚠️ [Fallback] Failed to save ChatGPT response to database');
+      }
+
+      return chatgptResponse;
+
+    } catch (fallbackError: any) {
+      console.error('❌ [Fallback] ChatGPT also failed:', {
+        message: fallbackError.message,
+        name: fallbackError.name,
+        stack: fallbackError.stack?.substring(0, 500)
+      });
+
+      console.log(`⏱️ [Fallback] Total time (both failed): ${Date.now() - startTime}ms`);
+
+      // Save fallback failure to database
+      try {
+        await supabaseAdmin.from('messages').insert({
+          conversation_id: conversationId,
+          role: 'system',
+          content: `Fallback Error: ${fallbackError.message}`,
+          metadata: {
+            channel: 'whatsapp',
+            processor: 'chatgpt-fallback',
+            error: true,
+            claude_error: error.message,
+            chatgpt_error: fallbackError.message,
+            both_failed: true,
+            timestamp: new Date().toISOString()
+          }
+        });
+      } catch (dbError) {
+        console.error('⚠️ [Fallback] Failed to save fallback error');
+      }
+
+      // Both Claude and ChatGPT failed - return error message to user
+      if (errorDetails.isOverloaded) {
+        return 'Disculpá, el sistema está con mucha demanda en este momento. Por favor, intentá de nuevo en unos segundos.';
+      }
+
+      return 'Disculpá, tuve un problema técnico. ¿Podés intentar de nuevo en unos segundos?';
+    }
   }
 }

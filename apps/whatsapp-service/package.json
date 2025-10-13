@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^2.0.27",
+    "@ai-sdk/openai": "^2.0.51",
     "@snkhouse/agent-builder": "workspace:*",
     "@snkhouse/ai-agent": "workspace:*",
     "@snkhouse/analytics": "workspace:*",
