@@ -61,11 +61,31 @@ export interface DashboardMetrics {
     count: number;
   }>;
   averageResponseTime: number;
-  // Métricas de IA (SNKH-15)
+  // Métricas de IA (expandidas com fallback e usage)
   aiSuccessRate: number;
   averageTokens: number;
   toolCallsTotal: number;
-  // Métricas de WooCommerce (SNKH-15)
+  // AI Fallback metrics (Claude vs ChatGPT)
+  fallbackRate: number;
+  claudeSuccessRate: number;
+  chatgptFallbackCount: number;
+  averageResponseTimeClaude: number;
+  averageResponseTimeChatGPT: number;
+  // Token usage metrics
+  totalTokensUsed: number;
+  averagePromptTokens: number;
+  averageCompletionTokens: number;
+  minTokens: number;
+  maxTokens: number;
+  estimatedCost: number;
+  // Error metrics
+  totalErrors: number;
+  errorTypes: Array<{
+    type: string;
+    count: number;
+  }>;
+  overloadErrors: number;
+  // Métricas de WooCommerce
   productsSearched: number;
   topSearchedProducts: Array<{
     name: string;
@@ -264,6 +284,23 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
       aiSuccessRate: aiMetrics.aiSuccessRate,
       averageTokens: aiMetrics.averageTokens,
       toolCallsTotal: aiMetrics.toolCallsTotal,
+      // AI Fallback metrics
+      fallbackRate: aiMetrics.fallbackRate,
+      claudeSuccessRate: aiMetrics.claudeSuccessRate,
+      chatgptFallbackCount: aiMetrics.chatgptFallbackCount,
+      averageResponseTimeClaude: aiMetrics.averageResponseTimeClaude,
+      averageResponseTimeChatGPT: aiMetrics.averageResponseTimeChatGPT,
+      // Token usage metrics
+      totalTokensUsed: aiMetrics.totalTokensUsed,
+      averagePromptTokens: aiMetrics.averagePromptTokens,
+      averageCompletionTokens: aiMetrics.averageCompletionTokens,
+      minTokens: aiMetrics.minTokens,
+      maxTokens: aiMetrics.maxTokens,
+      estimatedCost: aiMetrics.estimatedCost,
+      // Error metrics
+      totalErrors: aiMetrics.totalErrors,
+      errorTypes: aiMetrics.errorTypes,
+      overloadErrors: aiMetrics.overloadErrors,
       // Métricas de WooCommerce (REAIS)
       productsSearched: wooMetrics.productsSearched,
       topSearchedProducts: wooMetrics.topSearchedProducts,

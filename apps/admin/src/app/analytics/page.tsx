@@ -68,16 +68,77 @@ export default async function AnalyticsPage() {
           />
         </div>
 
-        {/* Performance Metrics */}
+        {/* AI Performance Metrics (NEW) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <MetricCard
+            title="Taxa de Sucesso Claude"
+            value={`${metrics.claudeSuccessRate}%`}
+            subtitle={`${metrics.chatgptFallbackCount} fallbacks para ChatGPT`}
+            icon="🤖"
+            color="blue"
+          />
+          <MetricCard
+            title="Taxa de Fallback"
+            value={`${metrics.fallbackRate}%`}
+            subtitle="Usando ChatGPT (gpt-4o-mini)"
+            icon="🔄"
+            color="orange"
+          />
+          <MetricCard
+            title="Tokens Utilizados"
+            value={metrics.totalTokensUsed.toLocaleString()}
+            subtitle={`Custo estimado: $${metrics.estimatedCost.toFixed(2)}`}
+            icon="💰"
+            color="green"
+          />
+          <MetricCard
+            title="Total de Erros"
+            value={metrics.totalErrors.toString()}
+            subtitle={`${metrics.overloadErrors} overload errors`}
+            icon="⚠️"
+            color="red"
+          />
+        </div>
+
+        {/* AI Performance Details */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          {/* Response Time Comparison */}
           <div className="bg-white rounded-lg shadow-md p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-gray-900">⚡ Performance</h2>
+              <h2 className="text-xl font-semibold text-gray-900">⚡ Tempo de Resposta (IA)</h2>
             </div>
             <div className="space-y-4">
               <div>
                 <div className="flex justify-between mb-1">
-                  <span className="text-sm text-gray-600">Tempo Médio de Resposta</span>
+                  <span className="text-sm text-gray-600">Claude (Haiku)</span>
+                  <span className="text-sm font-semibold text-gray-900">
+                    {metrics.averageResponseTimeClaude}ms
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className="bg-blue-500 h-2 rounded-full"
+                    style={{ width: `${Math.min((metrics.averageResponseTimeClaude / 5000) * 100, 100)}%` }}
+                  ></div>
+                </div>
+              </div>
+              <div>
+                <div className="flex justify-between mb-1">
+                  <span className="text-sm text-gray-600">ChatGPT (gpt-4o-mini)</span>
+                  <span className="text-sm font-semibold text-gray-900">
+                    {metrics.averageResponseTimeChatGPT}ms
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className="bg-orange-500 h-2 rounded-full"
+                    style={{ width: `${Math.min((metrics.averageResponseTimeChatGPT / 5000) * 100, 100)}%` }}
+                  ></div>
+                </div>
+              </div>
+              <div>
+                <div className="flex justify-between mb-1">
+                  <span className="text-sm text-gray-600">WhatsApp (User → Bot)</span>
                   <span className="text-sm font-semibold text-gray-900">
                     {metrics.averageResponseTime}s
                   </span>
@@ -89,23 +150,76 @@ export default async function AnalyticsPage() {
                   ></div>
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* Token Usage Breakdown */}
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-gray-900">🎯 Uso de Tokens</h2>
+            </div>
+            <div className="space-y-4">
               <div>
                 <div className="flex justify-between mb-1">
-                  <span className="text-sm text-gray-600">Mensagens por Conversa</span>
+                  <span className="text-sm text-gray-600">Tokens Médios por Mensagem</span>
                   <span className="text-sm font-semibold text-gray-900">
-                    {metrics.averageMessagesPerConversation}
+                    {metrics.averageTokens.toLocaleString()}
                   </span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
                   <div
-                    className="bg-blue-500 h-2 rounded-full"
-                    style={{ width: `${Math.min(metrics.averageMessagesPerConversation * 10, 100)}%` }}
+                    className="bg-purple-500 h-2 rounded-full"
+                    style={{ width: `${Math.min((metrics.averageTokens / 2000) * 100, 100)}%` }}
                   ></div>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-gray-600 mb-1">Prompt (avg)</p>
+                  <p className="font-semibold text-gray-900">{metrics.averagePromptTokens.toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className="text-gray-600 mb-1">Completion (avg)</p>
+                  <p className="font-semibold text-gray-900">{metrics.averageCompletionTokens.toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className="text-gray-600 mb-1">Mínimo</p>
+                  <p className="font-semibold text-gray-900">{metrics.minTokens.toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className="text-gray-600 mb-1">Máximo</p>
+                  <p className="font-semibold text-gray-900">{metrics.maxTokens.toLocaleString()}</p>
                 </div>
               </div>
             </div>
           </div>
+        </div>
 
+        {/* Error Types and Conversations Status */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          {/* Error Types */}
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-gray-900">🐛 Tipos de Erros</h2>
+            </div>
+            <div className="space-y-3">
+              {metrics.errorTypes.length > 0 ? (
+                metrics.errorTypes.map((errorType) => (
+                  <div key={errorType.type} className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                      <span className="text-sm text-gray-700">{errorType.type}</span>
+                    </div>
+                    <span className="text-sm font-semibold text-gray-900">{errorType.count}</span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-center text-gray-500 py-4">Nenhum erro registrado 🎉</p>
+              )}
+            </div>
+          </div>
+
+          {/* Conversation Status */}
           <div className="bg-white rounded-lg shadow-md p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold text-gray-900">📊 Conversas por Status</h2>
@@ -120,6 +234,81 @@ export default async function AnalyticsPage() {
                   <span className="text-sm font-semibold text-gray-900">{status.count}</span>
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+
+        {/* WooCommerce Metrics */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          {/* Products Searched */}
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-gray-900">🛍️ WooCommerce - Produtos</h2>
+            </div>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Total de Buscas</span>
+                <span className="text-2xl font-bold text-gray-900">{metrics.productsSearched}</span>
+              </div>
+              {metrics.topSearchedProducts.length > 0 && (
+                <div className="mt-4">
+                  <p className="text-sm text-gray-600 mb-2">Produtos Mais Buscados:</p>
+                  <div className="space-y-2">
+                    {metrics.topSearchedProducts.slice(0, 5).map((product, idx) => (
+                      <div key={idx} className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center text-xs text-blue-600 font-semibold">
+                            {idx + 1}
+                          </div>
+                          <span className="text-sm text-gray-700">{product.name}</span>
+                        </div>
+                        <span className="text-sm font-semibold text-gray-900">{product.count}x</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {metrics.topSearchedProducts.length === 0 && (
+                <p className="text-center text-gray-500 py-4">Nenhuma busca registrada ainda</p>
+              )}
+            </div>
+          </div>
+
+          {/* Error Logs Viewer */}
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-gray-900">📋 Logs de Erros (últimos 30 dias)</h2>
+            </div>
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {metrics.errorTypes.length > 0 ? (
+                <>
+                  <div className="text-xs text-gray-500 mb-2">
+                    Total: {metrics.totalErrors} erros | {metrics.overloadErrors} overload
+                  </div>
+                  {metrics.errorTypes.map((errorType, idx) => (
+                    <div
+                      key={idx}
+                      className="p-3 bg-red-50 border border-red-100 rounded text-sm"
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-semibold text-red-700">{errorType.type}</span>
+                        <span className="text-red-600 text-xs">{errorType.count}x</span>
+                      </div>
+                      <div className="text-xs text-gray-600">
+                        {errorType.type === 'AI_RetryError' && 'Falha após múltiplas tentativas (Claude API)'}
+                        {errorType.type === 'ApiCallError' && 'Erro na chamada da API'}
+                        {errorType.type === 'TimeoutError' && 'Timeout na requisição'}
+                        {errorType.type === 'Unknown' && 'Erro não classificado'}
+                      </div>
+                    </div>
+                  ))}
+                </>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-8 text-gray-500">
+                  <div className="text-4xl mb-2">🎉</div>
+                  <p className="text-sm">Nenhum erro registrado nos últimos 30 dias!</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -174,7 +363,7 @@ interface MetricCardProps {
   value: string;
   subtitle: string;
   icon: string;
-  color: 'blue' | 'green' | 'purple' | 'orange';
+  color: 'blue' | 'green' | 'purple' | 'orange' | 'red';
 }
 
 function MetricCard({ title, value, subtitle, icon, color }: MetricCardProps) {
@@ -183,6 +372,7 @@ function MetricCard({ title, value, subtitle, icon, color }: MetricCardProps) {
     green: 'from-green-500 to-green-600',
     purple: 'from-purple-500 to-purple-600',
     orange: 'from-orange-500 to-orange-600',
+    red: 'from-red-500 to-red-600',
   };
 
   return (
