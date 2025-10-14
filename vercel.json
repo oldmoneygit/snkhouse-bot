@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "pnpm install --frozen-lockfile && pnpm build --filter=@snkhouse/database --filter=@snkhouse/analytics --filter=@snkhouse/integrations --filter=@snkhouse/ai-agent && cd apps/widget && pnpm build",
+  "buildCommand": "pnpm install --frozen-lockfile && pnpm --filter @snkhouse/database build && pnpm --filter @snkhouse/analytics build && pnpm --filter @snkhouse/integrations build && pnpm --filter @snkhouse/ai-agent build && pnpm --filter @snkhouse/widget build",
   "outputDirectory": "apps/widget/.next",
   "installCommand": "pnpm install --frozen-lockfile",
   "framework": null,
