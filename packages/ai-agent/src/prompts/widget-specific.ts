@@ -11,11 +11,22 @@
 
 import { STORE_KNOWLEDGE_BASE } from "../knowledge/store-knowledge";
 
+/**
+ * PageContext - Sprint 2B: Context Awareness
+ * Informações sobre a página que o usuário está vendo
+ */
 interface PageContext {
-  page: string;
+  page: 'product' | 'category' | 'cart' | 'home' | 'checkout';
   productId?: number;
   productName?: string;
-  category?: string;
+  productPrice?: number;
+  productInStock?: boolean;
+  categoryId?: number;
+  categoryName?: string;
+  categorySlug?: string;
+  cartItemsCount?: number;
+  cartTotal?: number;
+  timestamp?: string;
 }
 
 interface WidgetPromptOptions {
@@ -310,20 +321,141 @@ export function buildWidgetSystemPrompt(
   let contextSection = "";
   if (pageContext) {
     contextSection = `
-## 📍 CONTEXTO DE PÁGINA ACTUAL
+## 📍 CONTEXTO DE PÁGINA ACTUAL (USA ESTO!)
 
-Usuario está viendo: **${pageContext.page}**
-${pageContext.productName ? `Producto: ${pageContext.productName} (ID: ${pageContext.productId})` : ""}
-${pageContext.category ? `Categoría: ${pageContext.category}` : ""}
+`;
 
-**Usa este contexto para hacer respuestas más relevantes!**
+    // Contexto específico por tipo de página
+    switch (pageContext.page) {
+      case 'product':
+        contextSection += `
+**Usuario está viendo página de PRODUCTO específico:**
+
+- Producto: ${pageContext.productName || 'Desconocido'} (ID: ${pageContext.productId})
+- Precio: ${pageContext.productPrice ? `ARS ${pageContext.productPrice.toLocaleString('es-AR')}` : 'Consultar'}
+- Stock: ${pageContext.productInStock ? '✅ Disponible' : '❌ Sin stock'}
+
+**INSTRUCCIONES CRÍTICAS:**
+
+1. Si preguntan "¿Tienen stock?" → Responde sobre ESTE producto específico
+2. Si preguntan "¿Cuánto cuesta?" → Ya sabes el precio (${pageContext.productPrice})
+3. Si preguntan "¿Qué me recomendás?" → Menciona ESTE producto que está viendo
+4. Usa "este" / "esta" al referirte al producto (ej: "Esta ${pageContext.productName} tiene...")
+5. Si preguntan algo NO relacionado al producto, responde normalmente
+
+**EJEMPLOS CORRECTOS:**
+
+User: "¿Tienen stock?"
+Bot: "${pageContext.productInStock ? `Sí! ${pageContext.productName} tiene stock disponible` : `${pageContext.productName} está agotado, pero puedo mostrarte alternativas similares`}. ¿Qué talle necesitás?"
+
+User: "¿Cuánto sale?"
+Bot: "${pageContext.productName} está ARS ${pageContext.productPrice?.toLocaleString('es-AR')}. ${pageContext.productInStock ? '¿Querés agregarlo al carrito?' : 'Actualmente sin stock.'}"
+
+User: "¿Es bueno?"
+Bot: "¡${pageContext.productName} es excelente! [dar opinión relevante]. ¿Te interesa?"
+`;
+        break;
+
+      case 'category':
+        contextSection += `
+**Usuario está navegando CATEGORÍA:**
+
+- Categoría: ${pageContext.categoryName || 'Desconocida'}
+- Slug: ${pageContext.categorySlug || 'N/A'}
+
+**INSTRUCCIONES:**
+
+1. Si preguntan "¿Qué me recomendás?" → Recomienda productos DE ESTA CATEGORÍA
+2. Si preguntan "¿Qué hay disponible?" → Busca en ${pageContext.categoryName}
+3. Menciona que está viendo la categoría (ej: "Vi que estás en ${pageContext.categoryName}...")
+
+**EJEMPLO CORRECTO:**
+
+User: "¿Qué me recomendás?"
+Bot: "Vi que estás en ${pageContext.categoryName}! Te recomiendo [usar tool search_products con esta categoría]. ¿Qué estilo preferís?"
+`;
+        break;
+
+      case 'cart':
+        contextSection += `
+**Usuario está en el CARRITO:**
+
+- Items en carrito: ${pageContext.cartItemsCount || 0}
+- Total: ${pageContext.cartTotal ? `ARS ${pageContext.cartTotal.toLocaleString('es-AR')}` : 'ARS 0'}
+
+**INSTRUCCIONES:**
+
+1. Si preguntan por productos, sugerir complementos al carrito actual
+2. Ayudar con dudas sobre envío, pago, etc.
+3. Si carrito vacío, sugerir productos populares
+
+**EJEMPLO CORRECTO:**
+
+${pageContext.cartItemsCount && pageContext.cartItemsCount > 0
+  ? `User: "¿Qué más me recomendás?"
+Bot: "Genial que tengas ${pageContext.cartItemsCount} items en tu carrito! Para complementar, te recomiendo [productos relacionados]. También tenés envío GRATIS."`
+  : `User: "¿Qué me recomendás?"
+Bot: "Tu carrito está vacío. ¿Qué tipo de zapatillas buscás? Puedo mostrarte nuestros más vendidos!"`
+}
+`;
+        break;
+
+      case 'home':
+        contextSection += `
+**Usuario está en la HOME (página principal):**
+
+**INSTRUCCIONES:**
+
+1. Responder de forma general
+2. Ofrecer ayuda para navegar el catálogo
+3. Mostrar productos destacados o más vendidos
+
+**EJEMPLO CORRECTO:**
+
+User: "¿Qué me recomendás?"
+Bot: "¡Bienvenido a SNKHOUSE! ¿Qué estilo buscás? Puedo mostrarte nuestros más vendidos, lanzamientos recientes, o ayudarte a buscar algo específico. ¿Qué preferís?"
+`;
+        break;
+
+      case 'checkout':
+        contextSection += `
+**Usuario está en CHECKOUT (finalizando compra):**
+
+**INSTRUCCIONES:**
+
+1. Ayudar con dudas sobre el proceso de compra
+2. Información sobre envío y pago
+3. NO recomendar productos (está finalizando!)
+
+**EJEMPLO CORRECTO:**
+
+User: "¿Cuánto demora el envío?"
+Bot: "El envío es GRATIS y demora 5-7 días hábiles a CABA/GBA, o 7-10 días al interior. Te enviamos el tracking por email en 24-48h. ¿Alguna otra duda sobre tu compra?"
+`;
+        break;
+    }
+
+    // Timestamp para freshness
+    if (pageContext.timestamp) {
+      const contextAge = Date.now() - new Date(pageContext.timestamp).getTime();
+      const minutesAgo = Math.floor(contextAge / 60000);
+
+      if (minutesAgo > 5) {
+        contextSection += `\n⚠️ Contexto tiene ${minutesAgo} minutos. Usuario puede haber cambiado de página.\n`;
+      }
+    }
+
+    contextSection += `
+---
+
+**REGLA DE ORO:** Usa el contexto de forma NATURAL. No digas "veo que estás en..." en cada mensaje. Úsalo para responder mejor.
 `;
   }
 
   // Instrucciones de tools (dinámico basado en acceso)
   const toolInstructions = hasOrdersAccess
     ? `
-## 🛠️ TOOLS DISPONIBLES
+## 🛠️ TOOLS DISPONIBLES - USO OBLIGATORIO
 
 ### Productos
 - search_products(query, limit) - Buscar productos en el catálogo
@@ -334,10 +466,17 @@ ${pageContext.category ? `Categoría: ${pageContext.category}` : ""}
 - get_order_status(order_id, customer_id) - Estado de un pedido
 - search_customer_orders(email_or_customer_id, limit) - Buscar pedidos de un cliente
 
-**IMPORTANTE:** Usa tools PROACTIVAMENTE cuando el usuario mencione productos o pedidos.
+⚠️ **REGLA CRÍTICA - USO DE TOOLS**:
+- Si el usuario menciona CUALQUIER marca (Nike, Adidas, Jordan, Yeezy, etc.) → DEBES usar search_products
+- Si el usuario pide "mostrar", "ver", "buscar", "recomendar" productos → DEBES usar search_products
+- Si el usuario pregunta por precio o stock → DEBES usar search_products primero
+- NUNCA respondas sobre productos sin consultar el catálogo con search_products
+
+❌ **PROHIBIDO** responder "Tenemos estas opciones..." sin usar search_products
+✅ **CORRECTO** siempre usar search_products primero, DESPUÉS responder con resultados
 `
     : `
-## 🛠️ TOOLS DISPONIBLES
+## 🛠️ TOOLS DISPONIBLES - USO OBLIGATORIO
 
 ### Productos
 - search_products(query, limit) - Buscar productos en el catálogo
@@ -349,6 +488,15 @@ Todavía no tenemos un email verificado del cliente.
 
 **SI EL CLIENTE PREGUNTA POR PEDIDOS:**
 Pedí amablemente que confirme su email: "Para ayudarte con tus pedidos, necesito que me confirmes el email que usaste en la compra 😊"
+
+⚠️ **REGLA CRÍTICA - USO DE TOOLS**:
+- Si el usuario menciona CUALQUIER marca (Nike, Adidas, Jordan, Yeezy, etc.) → DEBES usar search_products
+- Si el usuario pide "mostrar", "ver", "buscar", "recomendar" productos → DEBES usar search_products
+- Si el usuario pregunta por precio o stock → DEBES usar search_products primero
+- NUNCA respondas sobre productos sin consultar el catálogo con search_products
+
+❌ **PROHIBIDO** responder "Tenemos estas opciones..." sin usar search_products
+✅ **CORRECTO** siempre usar search_products primero, DESPUÉS responder con resultados
 `;
 
   // Prompt completo

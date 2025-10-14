@@ -198,3 +198,54 @@ export async function trackProductSearch(data: {
 }): Promise<void> {
   await analyticsTracker.track('product_search', data, data.conversation_id);
 }
+
+/**
+ * Rastreia visualização de product card
+ *
+ * @param data - Dados do produto exibido
+ * @returns Promise<void>
+ */
+export async function trackProductCardViewed(data: {
+  product_id: number;
+  product_name: string;
+  product_price: string;
+  in_stock: boolean;
+  conversation_id?: string;
+  source: 'widget' | 'whatsapp';
+}): Promise<void> {
+  await analyticsTracker.track('product_card_viewed', data, data.conversation_id);
+}
+
+/**
+ * Rastreia clique em product card
+ *
+ * @param data - Dados do produto clicado
+ * @returns Promise<void>
+ */
+export async function trackProductCardClicked(data: {
+  product_id: number;
+  product_name: string;
+  product_price: string;
+  in_stock: boolean;
+  conversation_id?: string;
+  source: 'widget' | 'whatsapp';
+}): Promise<void> {
+  await analyticsTracker.track('product_card_clicked', data, data.conversation_id);
+}
+
+/**
+ * Rastreia adição ao carrinho
+ *
+ * @param data - Dados do produto adicionado
+ * @returns Promise<void>
+ */
+export async function trackProductAddToCart(data: {
+  product_id: number;
+  product_name: string;
+  product_price: string;
+  in_stock: boolean;
+  conversation_id?: string;
+  source: 'widget' | 'whatsapp';
+}): Promise<void> {
+  await analyticsTracker.track('product_add_to_cart', data, data.conversation_id);
+}

@@ -2,6 +2,8 @@ import { supabaseAdmin } from "@snkhouse/database";
 import {
   getAIPerformanceMetrics,
   getWooCommerceMetrics,
+  getProductCardMetrics,
+  type ProductCardMetrics,
 } from "./events/aggregator";
 
 /**
@@ -102,6 +104,8 @@ export interface DashboardMetrics {
     name: string;
     count: number;
   }>;
+  // Métricas de Product Cards
+  productCardMetrics: ProductCardMetrics;
 }
 
 /**
@@ -319,8 +323,11 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
     // 13. Métricas de WooCommerce (DADOS REAIS!)
     const wooMetrics = await getWooCommerceMetrics();
 
+    // 14. Métricas de Product Cards (DADOS REAIS!)
+    const productCardMetrics = await getProductCardMetrics();
+
     console.log(
-      "✅ [Analytics] Métricas coletadas com sucesso (incluindo dados REAIS de IA e WooCommerce)",
+      "✅ [Analytics] Métricas coletadas com sucesso (incluindo dados REAIS de IA, WooCommerce e Product Cards)",
     );
 
     return {
@@ -360,6 +367,8 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
       // Métricas de WooCommerce (REAIS)
       productsSearched: wooMetrics.productsSearched,
       topSearchedProducts: wooMetrics.topSearchedProducts,
+      // Métricas de Product Cards (REAIS)
+      productCardMetrics,
     };
   } catch (error) {
     console.error("❌ [Analytics] Erro ao coletar métricas:", error);

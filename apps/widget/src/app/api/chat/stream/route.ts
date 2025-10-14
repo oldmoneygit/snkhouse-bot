@@ -1,10 +1,14 @@
-import { NextRequest } from "next/server";
-import { streamText } from "ai";
-import { anthropic } from "@ai-sdk/anthropic";
-import { openai } from "@ai-sdk/openai";
+import { OpenAIStream, StreamingTextResponse } from "ai";
+import OpenAI from "openai";
 import { supabaseAdmin } from "@snkhouse/database";
-import { buildWidgetSystemPrompt } from "@snkhouse/ai-agent";
+import { buildWidgetSystemPrompt, TOOLS_DEFINITIONS, executeToolCall } from "@snkhouse/ai-agent";
 import { findCustomerByEmail } from "@snkhouse/integrations";
+import { trackAIRequest, trackAIResponse } from "@snkhouse/analytics";
+import {
+  shouldUseTool,
+  extractProductIdsFromToolCalls,
+  type ToolCall,
+} from "../../../../lib/product-utils";
 
 // CRITICAL: Edge runtime required for streaming
 export const runtime = "edge";
@@ -12,52 +16,108 @@ export const runtime = "edge";
 const EMAIL_REGEX = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/;
 
 /**
+ * PageContext interface (matching frontend)
+ */
+interface PageContext {
+  page: 'product' | 'category' | 'cart' | 'home' | 'checkout';
+  productId?: number;
+  productName?: string;
+  productPrice?: number;
+  productInStock?: boolean;
+  categoryId?: number;
+  categoryName?: string;
+  categorySlug?: string;
+  cartItemsCount?: number;
+  cartTotal?: number;
+  timestamp?: string;
+}
+
+/**
+ * Request body type
+ */
+interface StreamRequestBody {
+  messages: any[];
+  customerEmail?: string;
+  conversationId?: string;
+  pageContext?: PageContext;
+}
+
+/**
+ * Sanitiza email para logs (LGPD compliance)
+ */
+function sanitizeEmail(email: string): string {
+  if (!email || !email.includes("@")) return "***@***";
+  const [user, domain] = email.split("@");
+  if (!user || !domain) return "***@***";
+  const domainParts = domain.split(".");
+  const tld =
+    domainParts.length > 0 ? domainParts[domainParts.length - 1] : "***";
+  return `${user[0]}***@***${tld}`;
+}
+
+/**
  * POST /api/chat/stream
  *
- * Streaming endpoint for real-time AI responses (word-by-word)
- * Uses Server-Sent Events (SSE) via Vercel AI SDK
+ * Streaming endpoint compatible with useChat() hook from Vercel AI SDK
+ * Uses Server-Sent Events (SSE) for real-time AI responses (word-by-word)
  *
  * Flow:
- * 1. Load conversation history
- * 2. Build system prompt (widget-specific)
- * 3. Stream AI response (Claude 3.5 Haiku primary, GPT-4o-mini fallback)
- * 4. Return StreamingTextResponse
- *
- * Note: Messages are saved AFTER streaming completes via /api/chat/save-message
+ * 1. Receive messages array from useChat()
+ * 2. Load conversation history from Supabase
+ * 3. Build system prompt (widget-specific)
+ * 4. Stream AI response (GPT-4o-mini)
+ * 5. Save messages to database on stream completion
+ * 6. Return StreamingTextResponse
  */
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    const {
-      message,
-      customerEmail,
-      conversationId,
-      pageContext,
-    }: {
-      message: string;
-      customerEmail: string;
-      conversationId?: string;
-      pageContext?: any;
-    } = body;
+    // useChat() sends: { messages: Message[], data?: any }
+    const incomingMessages = body.messages || [];
 
-    // Validation
-    if (!message || !message.trim()) {
-      return new Response(JSON.stringify({ error: "Mensaje requerido" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+    if (!Array.isArray(incomingMessages) || incomingMessages.length === 0) {
+      return new Response(
+        JSON.stringify({ error: "Mensajes requeridas" }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
     }
+
+    const lastUserMessage = incomingMessages[incomingMessages.length - 1];
+    if (!lastUserMessage || lastUserMessage.role !== "user") {
+      return new Response(
+        JSON.stringify({ error: "Última mensagem debe ser del usuario" }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    // Extract metadata from useChat() body parameter
+    const customerEmail: string | null = body.customerEmail?.trim()?.toLowerCase() || null;
+    const conversationId: string | null = body.conversationId?.trim() || null;
+    const pageContext: PageContext | undefined = body.pageContext;
 
     if (!customerEmail || !customerEmail.includes("@")) {
       return new Response(
         JSON.stringify({ error: "Email del cliente requerido" }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
+        { status: 400, headers: { "Content-Type": "application/json" } }
       );
     }
 
-    const originalEmail = customerEmail.trim().toLowerCase();
-    console.log("📡 [Stream API] Starting stream for:", originalEmail);
+    const originalEmail = customerEmail;
+    const userMessageContent = lastUserMessage.content;
+
+    console.log("📡 [Stream API] Starting stream:", {
+      email: sanitizeEmail(originalEmail),
+      conversationId: conversationId || "NEW",
+      messagesCount: incomingMessages.length,
+      hasPageContext: !!pageContext,
+      pageContextType: pageContext?.page,
+    });
+
+    // Log contexto detalhado (development only)
+    if (process.env.NODE_ENV === 'development' && pageContext) {
+      console.log('🎯 [Stream API] Page context:', pageContext);
+    }
 
     // 1) Get or create customer
     const { data: existingCustomer, error: fetchCustomerError } =
@@ -134,7 +194,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 3) Detect email in message (if any)
-    const emailMatch = message.match(EMAIL_REGEX);
+    const emailMatch = userMessageContent.match(EMAIL_REGEX);
     let effectiveEmail = originalEmail;
 
     if (emailMatch) {
@@ -160,13 +220,13 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 5) Load conversation history
+    // 5) Load conversation history (including metadata for product IDs)
     const { data: conversationMessages } = await supabaseAdmin
       .from("messages")
-      .select("role, content")
+      .select("role, content, metadata")
       .eq("conversation_id", activeConversationId)
       .order("created_at", { ascending: true })
-      .limit(10);
+      .limit(50);
 
     // 6) Build system prompt with context
     const systemPrompt = buildWidgetSystemPrompt({
@@ -180,60 +240,355 @@ export async function POST(request: NextRequest) {
       "chars",
     );
 
-    // 7) Prepare messages for AI
-    const messages = [
+    // 7) Track AI request
+    const aiStartTime = Date.now();
+
+    await trackAIRequest({
+      model: "gpt-4o-mini",
+      prompt_tokens: incomingMessages.reduce(
+        (sum: number, msg: any) => sum + Math.ceil(msg.content.length / 4),
+        0
+      ),
+      conversation_id: activeConversationId || "",
+      user_message: userMessageContent,
+    });
+
+    // 8) Initialize OpenAI client
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+
+    // 9) Prepare messages for OpenAI format
+    const openaiMessages = [
       ...(conversationMessages ?? []).map((msg) => ({
-        role: msg.role as "user" | "assistant",
+        role: msg.role as "user" | "assistant" | "system",
         content: msg.content,
       })),
-      {
-        role: "user" as const,
-        content: message,
-      },
+      ...incomingMessages.map((msg) => ({
+        role: msg.role as "user" | "assistant" | "system",
+        content: msg.content,
+      })),
     ];
 
-    // 8) Stream with Claude (primary) or OpenAI (fallback)
-    let streamResult;
-    try {
-      console.log("🤖 [Stream API] Using Claude 3.5 Haiku (primary)");
+    // 10) SMART ROUTING: Detect if user message needs tools
+    const needsTools = shouldUseTool(userMessageContent);
+    console.log(`🔧 [Stream API] Tool detection: ${needsTools ? 'TOOLS NEEDED' : 'STREAMING ONLY'}`);
 
-      streamResult = streamText({
-        model: anthropic("claude-3-5-haiku-20241022"),
-        system: systemPrompt,
-        messages,
-        temperature: 0.7,
+    // 10a) If tools needed: Use non-streaming with function calling
+    if (needsTools) {
+      console.log("🤖 [Stream API] Using function calling with tools (no streaming)");
+
+      let conversationMessages: any[] = [
+        { role: "system" as const, content: systemPrompt },
+        ...openaiMessages,
+      ];
+
+      let finalResponse = "";
+      let allToolCalls: ToolCall[] = [];
+      let iterations = 0;
+      const MAX_ITERATIONS = 5;
+
+      // Tool execution loop
+      while (iterations < MAX_ITERATIONS) {
+        iterations++;
+        console.log(`🔧 [Stream API] Tool iteration ${iterations}/${MAX_ITERATIONS}`);
+
+        const response = await openai.chat.completions.create({
+          model: "gpt-4o-mini",
+          messages: conversationMessages,
+          tools: TOOLS_DEFINITIONS as any,
+          tool_choice: "auto",
+          temperature: 0.7,
+          stream: false,
+        });
+
+        const assistantMessage = response.choices[0]?.message;
+
+        if (!assistantMessage) {
+          throw new Error("No response from AI");
+        }
+
+        // Check if AI wants to use tools
+        if (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
+          console.log(`🔧 [Stream API] AI requested ${assistantMessage.tool_calls.length} tool calls`);
+
+          // Add assistant message with tool calls to conversation
+          conversationMessages.push({
+            role: "assistant",
+            content: assistantMessage.content || "",
+            tool_calls: assistantMessage.tool_calls as any,
+          });
+
+          // Execute each tool call
+          for (const toolCall of assistantMessage.tool_calls) {
+            const toolName = toolCall.function.name;
+            const toolArgs = JSON.parse(toolCall.function.arguments);
+
+            console.log(`🔧 [Stream API] Executing tool: ${toolName}`, toolArgs);
+
+            try {
+              // Execute tool using @snkhouse/ai-agent handler
+              const toolResult = await executeToolCall(
+                toolName,
+                toolArgs
+              );
+
+              console.log(`✅ [Stream API] Tool ${toolName} executed successfully`);
+
+              // Store tool call with response
+              allToolCalls.push({
+                name: toolName,
+                arguments: toolArgs,
+                response: toolResult as any,
+              });
+
+              // Add tool result to conversation
+              // If result has .formatted, send only that to AI (for search_products)
+              const contentForAI = toolResult?.formatted || JSON.stringify(toolResult);
+
+              conversationMessages.push({
+                role: "tool" as const,
+                tool_call_id: toolCall.id,
+                content: contentForAI,
+              });
+            } catch (error) {
+              console.error(`❌ [Stream API] Tool ${toolName} failed:`, error);
+
+              // Add error result
+              conversationMessages.push({
+                role: "tool" as const,
+                tool_call_id: toolCall.id,
+                content: JSON.stringify({
+                  error: "Tool execution failed",
+                  message: error instanceof Error ? error.message : "Unknown error",
+                }),
+              });
+            }
+          }
+
+          // Continue loop to get AI's final response with tool results
+          continue;
+        }
+
+        // No more tool calls - AI has final response
+        finalResponse = assistantMessage.content || "";
+        console.log("✅ [Stream API] AI generated final response:", {
+          textLength: finalResponse.length,
+          totalToolCalls: allToolCalls.length,
+          iterations,
+        });
+        break;
+      }
+
+      if (!finalResponse) {
+        throw new Error("AI failed to generate final response after tool execution");
+      }
+
+      // Extract product IDs from tool calls
+      const productIds = extractProductIdsFromToolCalls(allToolCalls);
+      console.log(`🛍️ [Stream API] Product IDs detected: [${productIds.join(", ")}]`);
+
+      const aiResponseTime = Date.now() - aiStartTime;
+
+      // Save user message
+      await supabaseAdmin
+        .from("messages")
+        .insert({
+          conversation_id: activeConversationId,
+          role: "user",
+          content: userMessageContent,
+        })
+        .then(({ error }) => {
+          if (error) {
+            console.error("❌ [Stream API] Error saving user message:", error);
+          }
+        });
+
+      // Save assistant message with product metadata
+      await supabaseAdmin
+        .from("messages")
+        .insert({
+          conversation_id: activeConversationId,
+          role: "assistant",
+          content: finalResponse,
+          metadata: {
+            toolCalls: allToolCalls,
+            productIds, // For frontend to render product cards
+            hasProducts: productIds.length > 0,
+          },
+        })
+        .then(({ error }) => {
+          if (error) {
+            console.error("❌ [Stream API] Error saving assistant message:", error);
+          }
+        });
+
+      // Track AI response
+      await trackAIResponse({
+        model: "gpt-4o-mini",
+        completion_tokens: Math.ceil(finalResponse.length / 4),
+        total_tokens: Math.ceil((userMessageContent.length + finalResponse.length) / 4),
+        response_time_ms: aiResponseTime,
+        conversation_id: activeConversationId || "unknown",
+        success: true,
       });
-    } catch (error) {
-      console.error(
-        "⚠️ [Stream API] Claude failed, falling back to OpenAI:",
-        error,
-      );
 
-      streamResult = streamText({
-        model: openai("gpt-4o-mini"),
-        system: systemPrompt,
-        messages,
-        temperature: 0.7,
+      // Create a streaming-compatible response using OpenAIStream
+      // We need to convert the complete response into a format that OpenAIStream can process
+
+      // Create a fake OpenAI stream response
+      const mockStreamResponse = (async function* () {
+        // Split into words for progressive display
+        const words = finalResponse.split(' ');
+        for (let i = 0; i < words.length; i++) {
+          const text = i < words.length - 1 ? words[i] + ' ' : words[i];
+          yield {
+            choices: [
+              {
+                delta: {
+                  content: text,
+                },
+                index: 0,
+                finish_reason: i === words.length - 1 ? 'stop' : null,
+              },
+            ],
+          };
+        }
+      })();
+
+      // Convert to ReadableStream using OpenAIStream
+      const stream = OpenAIStream(mockStreamResponse as any);
+
+      return new StreamingTextResponse(stream, {
+        headers: {
+          "X-Conversation-Id": activeConversationId || "",
+          "X-Email": effectiveEmail,
+          "X-Product-Ids": productIds.join(","),
+        },
       });
     }
 
-    // 9) Return streaming response
-    // Client will receive tokens word-by-word via SSE
-    // After completion, client calls /api/chat/save-message to persist
-    // Note: conversationId and other metadata passed via useChat() body
+    // 10b) If no tools needed: Use streaming for better UX
+    console.log("🤖 [Stream API] Using streamText (no tools, streaming enabled)");
 
-    return streamResult.toTextStreamResponse();
-  } catch (error) {
-    console.error("❌ [Stream API] Error:", error);
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: systemPrompt },
+        ...openaiMessages,
+      ],
+      temperature: 0.7,
+      stream: true, // STREAMING enabled
+    });
+
+    // 11) Convert to AI SDK stream with callbacks
+    let fullResponse = "";
+
+    const stream = OpenAIStream(response as any, {
+      async onStart() {
+        console.log("🔄 [Stream API] Stream started");
+      },
+      async onToken(token: string) {
+        fullResponse += token;
+      },
+      async onCompletion() {
+        console.log("✅ [Stream API] Stream completed:", {
+          textLength: fullResponse.length,
+          conversationId: activeConversationId,
+        });
+
+        const aiResponseTime = Date.now() - aiStartTime;
+
+        // Save user message
+        await supabaseAdmin
+          .from("messages")
+          .insert({
+            conversation_id: activeConversationId,
+            role: "user",
+            content: userMessageContent,
+          })
+          .then(({ error }) => {
+            if (error) {
+              console.error("❌ [Stream API] Error saving user message:", error);
+            }
+          });
+
+        // Save assistant message
+        await supabaseAdmin
+          .from("messages")
+          .insert({
+            conversation_id: activeConversationId,
+            role: "assistant",
+            content: fullResponse,
+          })
+          .then(({ error }) => {
+            if (error) {
+              console.error("❌ [Stream API] Error saving assistant message:", error);
+            }
+          });
+
+        // Track AI response
+        await trackAIResponse({
+          model: "gpt-4o-mini",
+          completion_tokens: Math.ceil(fullResponse.length / 4),
+          total_tokens: Math.ceil((userMessageContent.length + fullResponse.length) / 4),
+          response_time_ms: aiResponseTime,
+          conversation_id: activeConversationId || "unknown",
+          success: true,
+        });
+      },
+    });
+
+    // 12) Return streaming response with metadata
+    return new StreamingTextResponse(stream, {
+      headers: {
+        "X-Conversation-Id": activeConversationId || "",
+        "X-Email": effectiveEmail,
+      },
+    });
+  } catch (error: any) {
+    console.error("❌ [Stream API] Error:", error?.message ?? error);
+
+    try {
+      await trackAIResponse({
+        model: "gpt-4o-mini",
+        completion_tokens: 0,
+        total_tokens: 0,
+        response_time_ms: 0,
+        conversation_id: "error",
+        success: false,
+        error: error?.message ?? "unknown",
+      });
+    } catch (trackError) {
+      console.error("❌ [Stream API] Error tracking failed:", trackError);
+    }
 
     return new Response(
       JSON.stringify({
-        error: error instanceof Error ? error.message : "Error desconocido",
+        error: "Error interno del servidor",
+        message: "Lo siento, hubo un error. Por favor intenta de nuevo.",
       }),
       {
         status: 500,
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
   }
+}
+
+/**
+ * Health check endpoint
+ */
+export async function GET() {
+  return new Response(
+    JSON.stringify({
+      status: "OK",
+      message: "SNKHOUSE Widget Streaming API funcionando",
+      timestamp: new Date().toISOString(),
+    }),
+    {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    }
+  );
 }

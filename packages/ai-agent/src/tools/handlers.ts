@@ -16,7 +16,7 @@ export async function searchProducts(
   query: string,
   limit: number = 5,
   conversationId?: string,
-): Promise<string> {
+): Promise<{ formatted: string; products: Array<{ id: number; name: string; price: string; stock_status: string; permalink: string }> }> {
   console.log(`🔍 [Tool] Buscando productos (INTELLIGENT SEARCH): "${query}"`);
   const toolStartTime = Date.now();
 
@@ -89,13 +89,18 @@ export async function searchProducts(
     // Se não encontrou nada com nenhuma estratégia
     if (products.length === 0) {
       console.log("❌ [Tool] All strategies failed - no products found");
-      return `No encontré productos para "${query}".
+      const errorMessage = `No encontré productos para "${query}".
 
 Te recomiendo:
 🔍 Explorá nuestro catálogo completo en: https://snkhouse.com
 📱 O contactanos para que te ayudemos a encontrar lo que buscás
 📧 Email: contacto@snkhouse.com
 📸 Instagram: @snkhouse.ar`;
+
+      return {
+        formatted: errorMessage,
+        products: []
+      };
     }
 
     // Formatar resultados para a IA
@@ -143,7 +148,19 @@ Te recomiendo:
       }
     }
 
-    return `Encontré ${products.length} producto${products.length > 1 ? "s" : ""} para "${query}":\n\n${formatted}`;
+    // Retornar tanto o texto formatado quanto os produtos estruturados
+    const textResponse = `Encontré ${products.length} producto${products.length > 1 ? "s" : ""} para "${query}":\n\n${formatted}`;
+
+    return {
+      formatted: textResponse,
+      products: products.map(p => ({
+        id: p.id,
+        name: p.name,
+        price: p.price || "0",
+        stock_status: p.stock_status,
+        permalink: p.permalink
+      }))
+    };
   } catch (error: any) {
     console.error("❌ [Tool] Error en searchProducts:", error.message);
 
@@ -159,7 +176,10 @@ Te recomiendo:
       });
     }
 
-    return "Hubo un error al buscar productos. Por favor intentá de nuevo.";
+    return {
+      formatted: "Hubo un error al buscar productos. Por favor intentá de nuevo.",
+      products: []
+    };
   }
 }
 
@@ -357,12 +377,15 @@ export async function getProductsOnSale(limit: number = 10): Promise<string> {
 export async function executeToolCall(
   toolName: string,
   args: any,
-): Promise<string> {
+): Promise<any> {
   console.log(`🔧 [Tool] Executando: ${toolName}`, args);
 
   switch (toolName) {
-    case "search_products":
-      return searchProducts(args.query, args.limit);
+    case "search_products": {
+      const result = await searchProducts(args.query, args.limit);
+      // Retornar apenas o texto formatado para a IA, mas guardar produtos no objeto
+      return result;
+    }
 
     case "get_product_details":
       return getProductDetails(args.product_id);

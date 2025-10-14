@@ -48,7 +48,20 @@
       "Bash(pnpm kill:ports:*)",
       "Bash(node:*)",
       "Bash(pnpm --filter=@snkhouse/ai-agent type-check)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(test -f \"c:\\Users\\PC\\Desktop\\Ecossistema_Atendimento_SNKHOUSE\\apps\\widget\\src\\app\\api\\chat\\stream\\route.ts\")",
+      "Bash(pnpm remove:*)",
+      "Bash(curl:*)",
+      "Bash(pnpm --filter @snkhouse/analytics type-check)",
+      "Bash(chmod:*)",
+      "Bash(vercel inspect:*)",
+      "Bash(vercel ls:*)",
+      "Bash(vercel:*)",
+      "Bash(find:*)",
+      "Bash(git reset:*)",
+      "Bash(test -d \"c:\\Users\\PC\\Desktop\\Ecossistema_Atendimento_SNKHOUSE\\apps\\widget\\node_modules\\next\")",
+      "Bash(test:*)",
+      "Bash(tree:*)"
     ],
     "deny": [],
     "ask": []

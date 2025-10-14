@@ -7,12 +7,20 @@ export {
   trackAIRequest,
   trackAIResponse,
   trackToolCall,
-  trackProductSearch
+  trackProductSearch,
+  trackProductCardViewed,
+  trackProductCardClicked,
+  trackProductAddToCart
 } from './events/tracker';
 
 export {
   getAIPerformanceMetrics,
-  getWooCommerceMetrics
+  getWooCommerceMetrics,
+  getProductCardMetrics
+} from './events/aggregator';
+
+export type {
+  ProductCardMetrics
 } from './events/aggregator';
 
 export type {
@@ -21,5 +29,6 @@ export type {
   AIRequestEvent,
   AIResponseEvent,
   ToolCallEvent,
-  ProductSearchEvent
+  ProductSearchEvent,
+  ProductCardEvent
 } from './events/types';

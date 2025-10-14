@@ -216,3 +216,40 @@ html {
   background-size: 1000px 100%;
   animation: shimmer 2s infinite;
 }
+
+/* ========================================
+   STREAMING OPTIMIZATIONS
+   ======================================== */
+
+/* Prevent scroll jitter during streaming */
+.messages-container {
+  scroll-behavior: auto;
+  overflow-anchor: auto;
+}
+
+/* Ensure streaming message stays in place */
+.streaming-message {
+  contain: layout style;
+  will-change: contents;
+  min-height: fit-content;
+}
+
+/* ========================================
+   TOAST NOTIFICATIONS
+   ======================================== */
+
+/* Slide down animation for toast notifications */
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-down {
+  animation: slideDown 0.3s ease-out;
+}

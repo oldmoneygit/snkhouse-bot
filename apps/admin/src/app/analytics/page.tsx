@@ -411,6 +411,95 @@ export default async function AnalyticsPage() {
           </div>
         </div>
 
+        {/* Product Cards Analytics */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">
+            🛒 Product Cards Analytics
+          </h2>
+
+          {/* Product Cards Main Metrics */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-6">
+            <MetricCard
+              title="Total de Visualizações"
+              value={metrics.productCardMetrics.totalViews.toString()}
+              subtitle={`${metrics.productCardMetrics.viewsLast24h} nas últimas 24h`}
+              icon="👀"
+              color="blue"
+            />
+            <MetricCard
+              title="Total de Cliques"
+              value={metrics.productCardMetrics.totalClicks.toString()}
+              subtitle={`${metrics.productCardMetrics.clicksLast24h} nas últimas 24h`}
+              icon="👆"
+              color="purple"
+            />
+            <MetricCard
+              title="Adicionados ao Carrinho"
+              value={metrics.productCardMetrics.totalAddToCart.toString()}
+              subtitle={`${metrics.productCardMetrics.addToCartLast24h} nas últimas 24h`}
+              icon="🛒"
+              color="green"
+            />
+            <MetricCard
+              title="Taxa de Cliques (CTR)"
+              value={`${metrics.productCardMetrics.clickThroughRate}%`}
+              subtitle="Cliques por visualização"
+              icon="📊"
+              color="orange"
+            />
+            <MetricCard
+              title="Taxa de Conversão"
+              value={`${metrics.productCardMetrics.conversionRate}%`}
+              subtitle="Carrinho por visualização"
+              icon="💰"
+              color="green"
+            />
+          </div>
+
+          {/* Top Products */}
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <h3 className="text-xl font-semibold text-gray-900 mb-4">
+              🏆 Top 10 Produtos Mais Visualizados (últimos 30 dias)
+            </h3>
+            <div className="space-y-3">
+              {metrics.productCardMetrics.topViewedProducts.length > 0 ? (
+                metrics.productCardMetrics.topViewedProducts.map((product, idx) => (
+                  <div
+                    key={product.product_id}
+                    className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                  >
+                    <div className="flex items-center space-x-4 flex-1">
+                      <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full text-white font-bold text-sm">
+                        {idx + 1}
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-semibold text-gray-900">{product.product_name}</p>
+                        <div className="flex items-center space-x-4 mt-1 text-xs text-gray-600">
+                          <span>👀 {product.views} visualizações</span>
+                          <span>👆 {product.clicks} cliques</span>
+                          <span>🛒 {product.add_to_cart} no carrinho</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-semibold text-gray-900">
+                        CTR: {product.views > 0 ? Math.round((product.clicks / product.views) * 100) : 0}%
+                      </p>
+                      <p className="text-xs text-gray-600">
+                        Conv: {product.views > 0 ? Math.round((product.add_to_cart / product.views) * 100) : 0}%
+                      </p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-center text-gray-500 py-8">
+                  Nenhum product card visualizado ainda
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+
         {/* Messages by Hour Chart */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-8">
           <h2 className="text-xl font-semibold text-gray-900 mb-6">

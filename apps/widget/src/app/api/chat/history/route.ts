@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     if (conversationId) {
       const { data: messages, error } = await supabaseAdmin
         .from("messages")
-        .select("id, role, content, created_at")
+        .select("id, role, content, created_at, metadata")
         .eq("conversation_id", conversationId)
         .order("created_at", { ascending: true });
 
@@ -61,10 +61,10 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ messages: [], conversationId: null });
       }
 
-      // Step 3: Buscar mensagens dessa conversa
+      // Step 3: Buscar mensagens dessa conversa (incluindo metadata para product IDs)
       const { data: messages, error: msgError } = await supabaseAdmin
         .from("messages")
-        .select("id, role, content, created_at")
+        .select("id, role, content, created_at, metadata")
         .eq("conversation_id", conversation.id)
         .order("created_at", { ascending: true });
 

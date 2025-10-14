@@ -18,12 +18,14 @@
     "@snkhouse/integrations": "workspace:*",
     "@supabase/supabase-js": "^2.39.0",
     "@types/dompurify": "^3.2.0",
-    "ai": "^5.0.68",
+    "ai": "^3.4.33",
     "dompurify": "^3.3.0",
     "dotenv": "^16.4.5",
     "next": "14.2.33",
+    "openai": "^6.3.0",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "zod": "^3.22.4"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

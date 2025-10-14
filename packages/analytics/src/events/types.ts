@@ -12,6 +12,9 @@ export type EventType =
   | 'ai_response'          // Resposta da IA
   | 'tool_call'            // Tool executado
   | 'product_search'       // Produto consultado
+  | 'product_card_viewed'  // Product card exibido
+  | 'product_card_clicked' // Product card clicado
+  | 'product_add_to_cart'  // Produto adicionado ao carrinho
   | 'conversation_started' // Nova conversa
   | 'conversation_ended'   // Conversa finalizada
   | 'error'                // Erro ocorrido
@@ -64,6 +67,18 @@ export interface ProductSearchEvent {
 }
 
 /**
+ * Dados de evento: Product Card Interaction
+ */
+export interface ProductCardEvent {
+  product_id: number;
+  product_name: string;
+  product_price: string;
+  in_stock: boolean;
+  conversation_id?: string;
+  source: 'widget' | 'whatsapp'; // Canal de origem
+}
+
+/**
  * União de todos os tipos de evento
  */
 export type EventData =
@@ -71,6 +86,7 @@ export type EventData =
   | AIResponseEvent
   | ToolCallEvent
   | ProductSearchEvent
+  | ProductCardEvent
   | Record<string, unknown>;
 
 /**

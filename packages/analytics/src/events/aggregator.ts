@@ -53,6 +53,27 @@ export interface WooCommerceMetrics {
 }
 
 /**
+ * Interface para métricas de Product Cards
+ */
+export interface ProductCardMetrics {
+  totalViews: number; // Total de product cards visualizados
+  totalClicks: number; // Total de cliques em product cards
+  totalAddToCart: number; // Total de add to cart
+  clickThroughRate: number; // Taxa de clique (clicks / views)
+  conversionRate: number; // Taxa de conversão (add_to_cart / views)
+  topViewedProducts: Array<{
+    product_id: number;
+    product_name: string;
+    views: number;
+    clicks: number;
+    add_to_cart: number;
+  }>;
+  viewsLast24h: number; // Views nas últimas 24h
+  clicksLast24h: number; // Clicks nas últimas 24h
+  addToCartLast24h: number; // Add to cart nas últimas 24h
+}
+
+/**
  * Calcula métricas de AI Performance baseado em eventos reais
  *
  * @returns Promise<AIPerformanceMetrics>
@@ -401,6 +422,203 @@ export async function getWooCommerceMetrics(): Promise<WooCommerceMetrics> {
         { name: 'New Balance 574', count: 12 },
         { name: 'Vans Old Skool', count: 8 },
       ]
+    };
+  }
+}
+
+/**
+ * Calcula métricas de Product Cards baseado em eventos reais
+ *
+ * @returns Promise<ProductCardMetrics>
+ *
+ * @example
+ * ```typescript
+ * const metrics = await getProductCardMetrics();
+ * console.log(`Taxa de conversão: ${metrics.conversionRate}%`);
+ * ```
+ */
+export async function getProductCardMetrics(): Promise<ProductCardMetrics> {
+  try {
+    const last30days = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    const last24hours = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+    console.log('📊 [Aggregator] Calculando métricas de Product Cards...');
+
+    // Total de views
+    const { count: totalViews } = await supabaseAdmin
+      .from('analytics_events')
+      .select('*', { count: 'exact', head: true })
+      .eq('event_type', 'product_card_viewed')
+      .gte('created_at', last30days);
+
+    // Total de clicks
+    const { count: totalClicks } = await supabaseAdmin
+      .from('analytics_events')
+      .select('*', { count: 'exact', head: true })
+      .eq('event_type', 'product_card_clicked')
+      .gte('created_at', last30days);
+
+    // Total de add to cart
+    const { count: totalAddToCart } = await supabaseAdmin
+      .from('analytics_events')
+      .select('*', { count: 'exact', head: true })
+      .eq('event_type', 'product_add_to_cart')
+      .gte('created_at', last30days);
+
+    // Views last 24h
+    const { count: viewsLast24h } = await supabaseAdmin
+      .from('analytics_events')
+      .select('*', { count: 'exact', head: true })
+      .eq('event_type', 'product_card_viewed')
+      .gte('created_at', last24hours);
+
+    // Clicks last 24h
+    const { count: clicksLast24h } = await supabaseAdmin
+      .from('analytics_events')
+      .select('*', { count: 'exact', head: true })
+      .eq('event_type', 'product_card_clicked')
+      .gte('created_at', last24hours);
+
+    // Add to cart last 24h
+    const { count: addToCartLast24h } = await supabaseAdmin
+      .from('analytics_events')
+      .select('*', { count: 'exact', head: true })
+      .eq('event_type', 'product_add_to_cart')
+      .gte('created_at', last24hours);
+
+    // Calculate rates
+    const clickThroughRate = totalViews && totalViews > 0
+      ? Math.round((totalClicks! / totalViews!) * 100 * 10) / 10
+      : 0;
+
+    const conversionRate = totalViews && totalViews > 0
+      ? Math.round((totalAddToCart! / totalViews!) * 100 * 10) / 10
+      : 0;
+
+    // Top viewed products with aggregated metrics
+    const { data: viewEvents } = await supabaseAdmin
+      .from('analytics_events')
+      .select('event_data')
+      .eq('event_type', 'product_card_viewed')
+      .gte('created_at', last30days);
+
+    const { data: clickEvents } = await supabaseAdmin
+      .from('analytics_events')
+      .select('event_data')
+      .eq('event_type', 'product_card_clicked')
+      .gte('created_at', last30days);
+
+    const { data: cartEvents } = await supabaseAdmin
+      .from('analytics_events')
+      .select('event_data')
+      .eq('event_type', 'product_add_to_cart')
+      .gte('created_at', last30days);
+
+    // Aggregate by product_id
+    const productMetricsMap = new Map<number, {
+      product_name: string;
+      views: number;
+      clicks: number;
+      add_to_cart: number;
+    }>();
+
+    // Count views
+    viewEvents?.forEach((event: any) => {
+      const productId = event.event_data.product_id;
+      const productName = event.event_data.product_name;
+
+      if (!productMetricsMap.has(productId)) {
+        productMetricsMap.set(productId, {
+          product_name: productName,
+          views: 0,
+          clicks: 0,
+          add_to_cart: 0
+        });
+      }
+
+      const metrics = productMetricsMap.get(productId)!;
+      metrics.views++;
+    });
+
+    // Count clicks
+    clickEvents?.forEach((event: any) => {
+      const productId = event.event_data.product_id;
+      const productName = event.event_data.product_name;
+
+      if (!productMetricsMap.has(productId)) {
+        productMetricsMap.set(productId, {
+          product_name: productName,
+          views: 0,
+          clicks: 0,
+          add_to_cart: 0
+        });
+      }
+
+      const metrics = productMetricsMap.get(productId)!;
+      metrics.clicks++;
+    });
+
+    // Count add to cart
+    cartEvents?.forEach((event: any) => {
+      const productId = event.event_data.product_id;
+      const productName = event.event_data.product_name;
+
+      if (!productMetricsMap.has(productId)) {
+        productMetricsMap.set(productId, {
+          product_name: productName,
+          views: 0,
+          clicks: 0,
+          add_to_cart: 0
+        });
+      }
+
+      const metrics = productMetricsMap.get(productId)!;
+      metrics.add_to_cart++;
+    });
+
+    // Convert to array and sort by views
+    const topViewedProducts = Array.from(productMetricsMap.entries())
+      .map(([product_id, data]) => ({
+        product_id,
+        product_name: data.product_name,
+        views: data.views,
+        clicks: data.clicks,
+        add_to_cart: data.add_to_cart
+      }))
+      .sort((a, b) => b.views - a.views)
+      .slice(0, 10); // Top 10
+
+    console.log('✅ [Aggregator] Métricas de Product Cards calculadas:', {
+      totalViews,
+      totalClicks,
+      totalAddToCart,
+      clickThroughRate,
+      conversionRate
+    });
+
+    return {
+      totalViews: totalViews || 0,
+      totalClicks: totalClicks || 0,
+      totalAddToCart: totalAddToCart || 0,
+      clickThroughRate,
+      conversionRate,
+      topViewedProducts,
+      viewsLast24h: viewsLast24h || 0,
+      clicksLast24h: clicksLast24h || 0,
+      addToCartLast24h: addToCartLast24h || 0
+    };
+  } catch (error) {
+    console.error('❌ [Aggregator] Erro ao calcular métricas de Product Cards:', error);
+    return {
+      totalViews: 0,
+      totalClicks: 0,
+      totalAddToCart: 0,
+      clickThroughRate: 0,
+      conversionRate: 0,
+      topViewedProducts: [],
+      viewsLast24h: 0,
+      clicksLast24h: 0,
+      addToCartLast24h: 0
     };
   }
 }

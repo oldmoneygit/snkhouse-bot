@@ -1,37 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useChat, type Message } from "ai/react";
 import DOMPurify from "dompurify";
-import { ProductList } from "../components/ProductList";
-import { hasProductMetadata } from "../lib/product-utils";
-
-/**
- * Context da página que o usuário está vendo
- * Enviado pelo parent window (snkhouse.com) via postMessage
- */
-interface PageContext {
-  page: 'product' | 'category' | 'cart' | 'home' | 'checkout';
-  productId?: number;
-  productName?: string;
-  productPrice?: number;
-  productInStock?: boolean;
-  categoryId?: number;
-  categoryName?: string;
-  categorySlug?: string;
-  cartItemsCount?: number;
-  cartTotal?: number;
-  timestamp?: string; // ISO string
-}
-
-/**
- * Mensagem recebida via postMessage
- */
-interface PageContextMessage {
-  type: 'PAGE_CONTEXT' | 'PAGE_CHANGED';
-  source: 'snkhouse';
-  data: PageContext;
-}
 
 /**
  * Sanitiza email para logs (LGPD compliance)
@@ -75,19 +46,6 @@ export default function WidgetStreaming() {
   const [showEmailPrompt, setShowEmailPrompt] = useState(false);
   const [emailInput, setEmailInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const isUserScrollingRef = useRef(false);
-  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Refs para enriquecimento de mensagens (não causam re-render)
-  const pendingProductIdsRef = useRef<number[]>([]);
-  const enrichedMessagesRef = useRef<Map<string, any>>(new Map());
-  const [enrichmentTrigger, setEnrichmentTrigger] = useState(0);
-
-  // Estado de contexto da página (Context Awareness)
-  const [pageContext, setPageContext] = useState<PageContext | null>(null);
-
-  console.log('[Widget] Current page context:', pageContext);
 
   // useChat() hook from Vercel AI SDK
   const {
@@ -101,9 +59,14 @@ export default function WidgetStreaming() {
   } = useChat({
     api: "/api/chat/stream",
     body: {
-      customerEmail,
-      conversationId,
-      pageContext, // ← Context Awareness!
+      data: {
+        customerEmail,
+        conversationId,
+        pageContext: {
+          url: typeof window !== "undefined" ? window.location.href : "",
+          title: typeof window !== "undefined" ? document.title : "",
+        },
+      },
     },
     onResponse(response: Response) {
       console.log("🔄 [Widget] Stream response received:", response.status);
@@ -111,7 +74,6 @@ export default function WidgetStreaming() {
       // Extract metadata from headers
       const newConversationId = response.headers.get("X-Conversation-Id");
       const newEmail = response.headers.get("X-Email");
-      const productIdsHeader = response.headers.get("X-Product-Ids");
 
       if (newConversationId && newConversationId !== conversationId) {
         setConversationId(newConversationId);
@@ -124,61 +86,17 @@ export default function WidgetStreaming() {
         localStorage.setItem("snkhouse_customer_email", newEmail);
         console.log("📧 [Widget] Email updated:", sanitizeEmail(newEmail));
       }
-
-      // Extract product IDs from header
-      if (productIdsHeader) {
-        const ids = productIdsHeader
-          .split(",")
-          .map(id => parseInt(id.trim(), 10))
-          .filter(id => !isNaN(id));
-
-        if (ids.length > 0) {
-          console.log("🛍️ [Widget] Product IDs from header:", ids);
-          pendingProductIdsRef.current = ids;
-        }
-      }
     },
     onFinish(message: Message) {
-      // Enriquecer mensagem com product IDs se houver
-      if (message.role === "assistant" && pendingProductIdsRef.current.length > 0) {
-        const productIds = [...pendingProductIdsRef.current];
-
-        // Armazenar metadata no ref
-        enrichedMessagesRef.current.set(message.id, {
-          productIds,
-          hasProducts: true
-        });
-
-        // Disparar re-render do useMemo
-        setEnrichmentTrigger(prev => prev + 1);
-
-        // Limpar product IDs pendentes
-        pendingProductIdsRef.current = [];
-      }
-
-      // Scroll suave quando mensagem completa
-      setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({
-          behavior: "smooth",
-          block: "end"
-        });
-      }, 200);
+      console.log("✅ [Widget] Stream finished:", {
+        messageLength: message.content.length,
+        role: message.role,
+      });
     },
     onError(error: Error) {
       console.error("❌ [Widget] Stream error:", error);
     },
   });
-
-  // Mesclar mensagens do useChat() com metadata enriquecida
-  const visibleMessages = useMemo(() => {
-    return messages.map(msg => {
-      const metadata = enrichedMessagesRef.current.get(msg.id);
-      if (metadata) {
-        return { ...msg, metadata };
-      }
-      return msg;
-    });
-  }, [messages, enrichmentTrigger]);
 
   // Load customer data and history on mount
   useEffect(() => {
@@ -221,33 +139,17 @@ export default function WidgetStreaming() {
         const data = await response.json();
 
         if (data.messages && data.messages.length > 0) {
-          // Convert to useChat() format AND populate enrichedMessagesRef with metadata
-          const loadedMessages = data.messages.map((msg: any) => {
-            // Se mensagem tem metadata com product IDs, armazenar no ref
-            if (msg.metadata && msg.metadata.productIds && msg.metadata.productIds.length > 0) {
-              enrichedMessagesRef.current.set(msg.id, {
-                productIds: msg.metadata.productIds,
-                hasProducts: true
-              });
-            }
-
-            return {
-              id: msg.id,
-              role: msg.role,
-              content: msg.content,
-              createdAt: new Date(msg.created_at),
-            };
-          });
+          // Convert to useChat() format
+          const loadedMessages = data.messages.map((msg: any) => ({
+            id: msg.id,
+            role: msg.role,
+            content: msg.content,
+            createdAt: new Date(msg.created_at),
+          }));
 
           setMessages(loadedMessages);
-
-          // Disparar re-render se houver mensagens com metadata
-          if (enrichedMessagesRef.current.size > 0) {
-            setEnrichmentTrigger(prev => prev + 1);
-          }
-
           console.log(
-            `✅ [Widget Streaming] Loaded ${loadedMessages.length} messages (${enrichedMessagesRef.current.size} with products)`
+            `✅ [Widget Streaming] Loaded ${loadedMessages.length} messages`
           );
 
           // Auto-scroll
@@ -269,125 +171,10 @@ export default function WidgetStreaming() {
     loadHistory();
   }, []);
 
-  // Detect when user is manually scrolling
+  // Auto-scroll on new messages
   useEffect(() => {
-    const container = messagesContainerRef.current;
-    if (!container) return;
-
-    const handleScroll = () => {
-      isUserScrollingRef.current = true;
-
-      // Clear previous timeout
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
-      }
-
-      // Reset after 1 second of no scrolling
-      scrollTimeoutRef.current = setTimeout(() => {
-        isUserScrollingRef.current = false;
-      }, 1000);
-    };
-
-    container.addEventListener("scroll", handleScroll, { passive: true });
-
-    return () => {
-      container.removeEventListener("scroll", handleScroll);
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  /**
-   * Escuta mensagens do parent window (snkhouse.com)
-   * para receber contexto da página atual
-   *
-   * CONTEXT AWARENESS - Sprint 2B
-   */
-  useEffect(() => {
-    function handleMessage(event: MessageEvent<PageContextMessage>) {
-      console.log('[Widget] Message received:', {
-        origin: event.origin,
-        type: event.data?.type,
-        source: event.data?.source,
-      });
-
-      // ⚠️ SECURITY: Validar origin
-      const allowedOrigins = [
-        'https://snkhouse.com',
-        'https://www.snkhouse.com',
-        'http://localhost:3000', // Development
-        'http://localhost:3001', // Development (WooCommerce)
-      ];
-
-      if (!allowedOrigins.includes(event.origin)) {
-        console.warn('[Widget] Message from unknown origin, ignoring:', event.origin);
-        return;
-      }
-
-      // Validar estrutura da mensagem
-      const message = event.data;
-
-      if (!message || typeof message !== 'object') {
-        console.warn('[Widget] Invalid message format:', message);
-        return;
-      }
-
-      if (message.type !== 'PAGE_CONTEXT' && message.type !== 'PAGE_CHANGED') {
-        console.log('[Widget] Unknown message type, ignoring:', message.type);
-        return;
-      }
-
-      if (message.source !== 'snkhouse') {
-        console.warn('[Widget] Unknown message source, ignoring:', message.source);
-        return;
-      }
-
-      // Validar dados do contexto
-      const context = message.data;
-
-      if (!context || !context.page) {
-        console.warn('[Widget] Invalid context data:', context);
-        return;
-      }
-
-      // ✅ Tudo válido - salvar contexto
-      console.log('✅ [Widget] Page context updated:', context);
-      setPageContext(context);
-
-      // Opcional: Mostrar toast de debug (remover em produção)
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🎯 [Widget] Context:', {
-          page: context.page,
-          product: context.productName,
-          category: context.categoryName,
-        });
-      }
-    }
-
-    // Adicionar listener
-    window.addEventListener('message', handleMessage);
-    console.log('[Widget] postMessage listener registered');
-
-    // Enviar mensagem para parent pedindo contexto inicial
-    // (caso widget carregue depois da página)
-    if (window.parent !== window) {
-      window.parent.postMessage(
-        {
-          type: 'WIDGET_READY',
-          source: 'snkhouse-widget',
-        },
-        '*' // Parent vai filtrar por source
-      );
-      console.log('[Widget] Sent WIDGET_READY to parent');
-    }
-
-    // Cleanup
-    return () => {
-      window.removeEventListener('message', handleMessage);
-      console.log('[Widget] postMessage listener removed');
-    };
-  }, []); // Rodar apenas uma vez
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   // Handle email submission
   const handleEmailSubmit = () => {
@@ -417,14 +204,6 @@ export default function WidgetStreaming() {
     }
 
     handleSubmit(e);
-
-    // Scroll to bottom when user sends a message (smooth)
-    setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({
-        behavior: "smooth",
-        block: "end"
-      });
-    }, 100);
   };
 
   // Email prompt modal
@@ -501,10 +280,10 @@ export default function WidgetStreaming() {
       <div className="max-w-6xl mx-auto px-8 py-16">
         <div className="text-center mb-16">
           <h1 className="text-5xl font-bold text-gray-900 mb-4">
-            SNKHOUSE
+            SNKHOUSE <span className="text-sm text-yellow-500">STREAMING</span>
           </h1>
           <p className="text-xl text-gray-600 mb-8">
-            Tienda de zapatillas importadas de Argentina
+            Tienda de zapatillas importadas de Argentina - Chat con IA en tiempo real
           </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
             <div className="bg-white rounded-xl p-6 shadow-lg">
@@ -571,9 +350,9 @@ export default function WidgetStreaming() {
               </div>
             </div>
 
-            {visibleMessages.length > 0 && (
+            {messages.length > 0 && (
               <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center animate-bounce">
-                {visibleMessages.length}
+                {messages.length}
               </div>
             )}
           </button>
@@ -602,7 +381,7 @@ export default function WidgetStreaming() {
                   <h2 className="font-bold text-lg">SNKHOUSE</h2>
                   <p className="text-xs opacity-80 flex items-center gap-1">
                     <span className="inline-block w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                    En línea ahora
+                    En línea - Streaming
                   </p>
                 </div>
               </div>
@@ -628,97 +407,74 @@ export default function WidgetStreaming() {
             </div>
 
             {/* Messages Area */}
-            <div
-              ref={messagesContainerRef}
-              className="messages-container flex-1 p-4 overflow-y-auto bg-gray-50 space-y-4"
-            >
-              {visibleMessages.length === 0 && !isLoading && (
+            <div className="flex-1 p-4 overflow-y-auto bg-gray-50 space-y-4">
+              {messages.length === 0 && (
                 <div className="text-center py-8">
                   <div className="text-4xl mb-4">👋</div>
                   <p className="text-gray-600 font-medium">
                     ¡Hola! Soy tu asistente de SNKHOUSE
                   </p>
                   <p className="text-sm text-gray-500 mt-2">
-                    Pregúntame sobre productos, pedidos o envíos
+                    Las respuestas aparecerán en tiempo real ⚡
                   </p>
                 </div>
               )}
 
-              {visibleMessages.map((message: Message, index: number) => {
-                // Check if message has product metadata
-                const messageMetadata = (message as any).metadata || (message as any).data;
-                const hasProducts = message.role === "assistant" && hasProductMetadata(messageMetadata);
-
-                return (
-                  <div key={message.id || `msg-${index}`}>
-                    {/* Message Bubble */}
+              {messages.map((message: Message, index: number) => (
+                <div
+                  key={message.id || `msg-${index}`}
+                  className={`flex ${message.role === "user" ? "justify-end" : "justify-start"} animate-fadeIn`}
+                >
+                  <div
+                    className={`max-w-xs p-4 rounded-2xl shadow-sm ${
+                      message.role === "user"
+                        ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-br-md"
+                        : "bg-white text-gray-800 border border-gray-200 rounded-bl-md"
+                    }`}
+                  >
                     <div
-                      className={`flex ${message.role === "user" ? "justify-end" : "justify-start"} animate-fadeIn`}
-                    >
+                      className="whitespace-pre-wrap text-sm leading-relaxed"
+                      dangerouslySetInnerHTML={{
+                        __html: DOMPurify.sanitize(
+                          formatMarkdown(message.content),
+                          {
+                            ALLOWED_TAGS: [
+                              "p",
+                              "br",
+                              "strong",
+                              "em",
+                              "a",
+                              "ul",
+                              "ol",
+                              "li",
+                            ],
+                            ALLOWED_ATTR: ["href", "target", "rel"],
+                          }
+                        ),
+                      }}
+                    />
+                    {message.createdAt && (
                       <div
-                        className={`max-w-xs p-4 rounded-2xl shadow-sm ${
+                        className={`text-xs mt-2 opacity-70 ${
                           message.role === "user"
-                            ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-br-md"
-                            : "bg-white text-gray-800 border border-gray-200 rounded-bl-md"
+                            ? "text-blue-100"
+                            : "text-gray-500"
                         }`}
                       >
-                        <div
-                          className="whitespace-pre-wrap text-sm leading-relaxed"
-                          dangerouslySetInnerHTML={{
-                            __html: DOMPurify.sanitize(
-                              formatMarkdown(message.content),
-                              {
-                                ALLOWED_TAGS: [
-                                  "p",
-                                  "br",
-                                  "strong",
-                                  "em",
-                                  "a",
-                                  "ul",
-                                  "ol",
-                                  "li",
-                                ],
-                                ALLOWED_ATTR: ["href", "target", "rel"],
-                              }
-                            ),
-                          }}
-                        />
-                        {message.createdAt && (
-                          <div
-                            className={`text-xs mt-2 opacity-70 ${
-                              message.role === "user"
-                                ? "text-blue-100"
-                                : "text-gray-500"
-                            }`}
-                          >
-                            {new Date(message.createdAt).toLocaleTimeString(
-                              "es-AR",
-                              {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              }
-                            )}
-                          </div>
+                        {new Date(message.createdAt).toLocaleTimeString(
+                          "es-AR",
+                          {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          }
                         )}
-                      </div>
-                    </div>
-
-                    {/* Product Cards (if assistant message has products) */}
-                    {hasProducts && messageMetadata.productIds && (
-                      <div className="flex justify-start mt-2">
-                        <div className="max-w-xs w-full">
-                          <ProductList
-                            productIds={messageMetadata.productIds}
-                            conversationId={conversationId || undefined}
-                          />
-                        </div>
                       </div>
                     )}
                   </div>
-                );
-              })}
+                </div>
+              ))}
 
-              {/* Loading indicator - shown while AI is generating response */}
+              {/* Loading indicator with streaming animation */}
               {isLoading && (
                 <div className="flex justify-start animate-fadeInSlide">
                   <div className="bg-white border border-gray-200 rounded-2xl rounded-bl-md p-4 shadow-sm">
@@ -735,7 +491,7 @@ export default function WidgetStreaming() {
                         ></div>
                       </div>
                       <span className="text-xs text-gray-500">
-                        Escribiendo...
+                        Escribiendo en tiempo real...
                       </span>
                     </div>
                   </div>

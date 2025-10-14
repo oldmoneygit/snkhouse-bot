@@ -27,7 +27,7 @@
 
 **Nome**: `snkhouse-bot` (Sistema de Atendimento Multicanal com IA)
 **Cliente**: SNKHOUSE Argentina ([snkhouse.com](https://snkhouse.com))
-**Setor**: E-commerce de Sneakers, Streetwear e Marcas de Luxo
+**Setor**: Loja virtual de Sneakers
 **Linguagem Primária**: Espanhol Argentino (AR-ES)
 
 **Objetivo Principal**:
