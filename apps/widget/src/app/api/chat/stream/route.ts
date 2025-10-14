@@ -321,8 +321,12 @@ export async function POST(request: Request) {
 
           // Execute each tool call
           for (const toolCall of assistantMessage.tool_calls) {
-            const toolName = toolCall.function.name;
-            const toolArgs = JSON.parse(toolCall.function.arguments);
+            // Type assertion for OpenAI ChatCompletionMessageToolCall
+            const toolFunction = (toolCall as any).function;
+            if (!toolFunction) continue;
+
+            const toolName = toolFunction.name;
+            const toolArgs = JSON.parse(toolFunction.arguments);
 
             console.log(`🔧 [Stream API] Executing tool: ${toolName}`, toolArgs);
 
