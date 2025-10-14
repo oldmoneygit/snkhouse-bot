@@ -1,7 +1,5 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "pnpm -w run build:widget",
-  "outputDirectory": "apps/widget/.next",
-  "installCommand": "pnpm install --frozen-lockfile",
-  "framework": "nextjs"
+  "buildCommand": "cd ../.. && pnpm -w run build:widget",
+  "installCommand": "cd ../.. && pnpm install --frozen-lockfile"
 }
