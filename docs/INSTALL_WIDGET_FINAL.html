@@ -1,0 +1,230 @@
+<!--
+═══════════════════════════════════════════════════════════════════
+  SNKHOUSE WIDGET - CÓDIGO DE INSTALAÇÃO COMPLETO
+  Copie e cole este código antes do </body> no seu site WordPress
+═══════════════════════════════════════════════════════════════════
+-->
+
+<!-- PARTE 1: Widget Chat (iframe) -->
+<div id="snkhouse-widget-container" style="
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 400px;
+  height: 600px;
+  border: none;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  z-index: 9999;
+  background: white;
+  overflow: hidden;
+">
+  <iframe
+    id="snkhouse-widget-iframe"
+    src="https://snkhouse-bot-widget.vercel.app"
+    style="width: 100%; height: 100%; border: none; border-radius: 16px;"
+    allow="clipboard-write"
+  ></iframe>
+</div>
+
+<!-- PARTE 2: Context Awareness (envia dados da página para o widget) -->
+<script>
+(function() {
+  console.log('🚀 SNKHOUSE Widget Context Awareness - Iniciando');
+
+  // Função para extrair dados da página atual
+  function extractPageContext() {
+    const context = {
+      page: 'home',
+      timestamp: new Date().toISOString()
+    };
+
+    // Detectar tipo de página
+    const bodyClasses = document.body.className;
+
+    // Página de Produto
+    if (bodyClasses.includes('single-product') || bodyClasses.includes('product-template')) {
+      context.page = 'product';
+
+      // Extrair dados do produto
+      const productTitle = document.querySelector('.product_title, .product-title, h1.entry-title');
+      if (productTitle) {
+        context.productName = productTitle.textContent.trim();
+      }
+
+      const productPrice = document.querySelector('.woocommerce-Price-amount, .price .amount, .product-price');
+      if (productPrice) {
+        const priceText = productPrice.textContent.replace(/[^0-9.,]/g, '');
+        context.productPrice = parseFloat(priceText.replace(',', '.'));
+      }
+
+      const productId = document.querySelector('[data-product_id], [data-product-id]');
+      if (productId) {
+        context.productId = parseInt(productId.getAttribute('data-product_id') || productId.getAttribute('data-product-id'));
+      }
+
+      const stockStatus = document.querySelector('.stock, .availability');
+      if (stockStatus) {
+        context.productInStock = !stockStatus.textContent.toLowerCase().includes('agotado');
+      }
+    }
+
+    // Página de Categoria
+    else if (bodyClasses.includes('product-category') || bodyClasses.includes('archive')) {
+      context.page = 'category';
+
+      const categoryTitle = document.querySelector('.page-title, .category-title, h1.entry-title');
+      if (categoryTitle) {
+        context.categoryName = categoryTitle.textContent.trim();
+      }
+
+      // Tentar extrair category ID da URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const catId = urlParams.get('cat') || urlParams.get('category_id');
+      if (catId) {
+        context.categoryId = parseInt(catId);
+      }
+    }
+
+    // Página de Carrinho
+    else if (bodyClasses.includes('woocommerce-cart') || window.location.pathname.includes('/cart')) {
+      context.page = 'cart';
+
+      const cartCount = document.querySelector('.cart-contents-count, .cart-count, .header-cart-count');
+      if (cartCount) {
+        context.cartItemsCount = parseInt(cartCount.textContent);
+      }
+
+      const cartTotal = document.querySelector('.cart-subtotal .amount, .order-total .amount');
+      if (cartTotal) {
+        const totalText = cartTotal.textContent.replace(/[^0-9.,]/g, '');
+        context.cartTotal = parseFloat(totalText.replace(',', '.'));
+      }
+    }
+
+    // Página de Checkout
+    else if (bodyClasses.includes('woocommerce-checkout') || window.location.pathname.includes('/checkout')) {
+      context.page = 'checkout';
+
+      const orderTotal = document.querySelector('.order-total .amount');
+      if (orderTotal) {
+        const totalText = orderTotal.textContent.replace(/[^0-9.,]/g, '');
+        context.cartTotal = parseFloat(totalText.replace(',', '.'));
+      }
+    }
+
+    return context;
+  }
+
+  // Enviar contexto para o widget
+  function sendContextToWidget(context) {
+    const iframe = document.getElementById('snkhouse-widget-iframe');
+    if (!iframe || !iframe.contentWindow) {
+      console.warn('⚠️ Widget iframe não encontrado');
+      return;
+    }
+
+    const message = {
+      type: 'PAGE_CONTEXT',
+      source: 'snkhouse',
+      data: context
+    };
+
+    console.log('📤 Enviando contexto para widget:', context);
+    iframe.contentWindow.postMessage(message, 'https://snkhouse-bot-widget.vercel.app');
+  }
+
+  // Inicializar quando página carregar
+  function initContextAwareness() {
+    // Aguardar iframe carregar
+    const iframe = document.getElementById('snkhouse-widget-iframe');
+    if (!iframe) {
+      console.error('❌ Widget iframe não encontrado');
+      return;
+    }
+
+    iframe.addEventListener('load', function() {
+      console.log('✅ Widget iframe carregado');
+
+      // Enviar contexto inicial
+      const context = extractPageContext();
+      sendContextToWidget(context);
+
+      // Re-enviar contexto quando página mudar (para SPAs)
+      let lastPath = window.location.pathname;
+      setInterval(function() {
+        if (window.location.pathname !== lastPath) {
+          lastPath = window.location.pathname;
+          console.log('🔄 Página mudou, re-enviando contexto');
+          const newContext = extractPageContext();
+          sendContextToWidget(newContext);
+        }
+      }, 1000);
+    });
+  }
+
+  // Inicializar quando DOM estiver pronto
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initContextAwareness);
+  } else {
+    initContextAwareness();
+  }
+
+  console.log('✅ SNKHOUSE Widget Context Awareness - Configurado');
+})();
+</script>
+
+<!--
+═══════════════════════════════════════════════════════════════════
+  INSTRUÇÕES DE INSTALAÇÃO
+═══════════════════════════════════════════════════════════════════
+
+  MÉTODO 1 - Via WordPress Admin (RECOMENDADO):
+
+  1. Acesse: Aparência → Editor de Temas
+  2. Selecione: footer.php (ou theme-footer.php)
+  3. Encontre a tag </body>
+  4. Cole TODO este código ANTES do </body>
+  5. Clique em "Atualizar Arquivo"
+
+  ──────────────────────────────────────────────────────────────────
+
+  MÉTODO 2 - Via Plugin (ALTERNATIVO):
+
+  1. Instale o plugin "Insert Headers and Footers"
+  2. Vá em: Configurações → Insert Headers and Footers
+  3. Cole TODO este código na seção "Scripts in Footer"
+  4. Clique em "Save"
+
+  ──────────────────────────────────────────────────────────────────
+
+  MÉTODO 3 - Via functions.php (AVANÇADO):
+
+  Adicione este código no functions.php do seu tema:
+
+  ```php
+  function snkhouse_widget_scripts() {
+    ?>
+    <!-- Cole o código HTML aqui -->
+    <?php
+  }
+  add_action('wp_footer', 'snkhouse_widget_scripts', 100);
+  ```
+
+  ══════════════════════════════════════════════════════════════════
+
+  🧪 TESTE APÓS INSTALAÇÃO:
+
+  1. Abra snkhouse.com em uma aba anônima
+  2. Abra o Console do navegador (F12 → Console)
+  3. Verifique as mensagens:
+     ✅ "🚀 SNKHOUSE Widget Context Awareness - Iniciando"
+     ✅ "✅ Widget iframe carregado"
+     ✅ "📤 Enviando contexto para widget"
+
+  4. Navegue para uma página de produto
+  5. Abra o widget e pergunte: "que producto estoy viendo?"
+  6. O bot deve responder com o nome do produto atual ✨
+
+  ══════════════════════════════════════════════════════════════════
+-->
