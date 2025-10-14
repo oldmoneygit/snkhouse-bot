@@ -1,0 +1,184 @@
+═══════════════════════════════════════════════════════════════════
+  🚀 SNKHOUSE WIDGET - INSTALAÇÃO VIA PLUGIN (3 MINUTOS)
+═══════════════════════════════════════════════════════════════════
+
+📦 ARQUIVO PRONTO: snkhouse-widget.zip (6 KB)
+📍 Localização: C:\Users\PC\Desktop\Ecossistema_Atendimento_SNKHOUSE\wordpress-plugin\
+
+═══════════════════════════════════════════════════════════════════
+
+PASSO 1: FAZER UPLOAD DO PLUGIN
+═══════════════════════════════════════════════════════════════════
+
+1. Entre no WordPress Admin:
+   👉 https://snkhouse.com/wp-admin
+
+2. Vá em: Plugins → Añadir Nuevo
+
+3. Clique em: "Subir Plugin" (topo da página)
+
+4. Clique em: "Seleccionar archivo"
+
+5. Escolha o arquivo:
+   📁 snkhouse-widget.zip
+   (está na pasta wordpress-plugin)
+
+6. Clique em: "Instalar Ahora"
+
+7. Aguarde 5-10 segundos
+
+8. Clique em: "Activar Plugin"
+
+═══════════════════════════════════════════════════════════════════
+
+PASSO 2: VERIFICAR INSTALAÇÃO
+═══════════════════════════════════════════════════════════════════
+
+1. Após ativar, você verá:
+   ✅ "Plugin activado"
+
+2. Vá em: Configuración → SNKHOUSE Widget
+
+3. Você verá uma página com:
+   ┌─────────────────────────────────────────────────────────────┐
+   │ ✅ Plugin Instalado Correctamente                           │
+   │ El widget está activo y funcionando en snkhouse.com         │
+   └─────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════
+
+PASSO 3: TESTAR NO SITE
+═══════════════════════════════════════════════════════════════════
+
+1. Abra em aba anônima (Ctrl+Shift+N):
+   👉 https://snkhouse.com
+
+2. Widget deve aparecer no canto inferior direito
+
+3. Clique no widget para abrir
+
+4. Digite: "hola"
+
+5. ✅ Bot deve responder!
+
+═══════════════════════════════════════════════════════════════════
+
+PASSO 4: TESTAR CONTEXT AWARENESS
+═══════════════════════════════════════════════════════════════════
+
+Teste 1 - Console:
+──────────────────
+1. Pressione F12 → Aba "Console"
+2. Você deve ver:
+   🚀 SNKHOUSE Widget Context Awareness - Iniciando
+   ✅ Widget iframe carregado
+   📤 Enviando contexto para widget: {page: "home", ...}
+
+Teste 2 - Produto:
+──────────────────
+1. Entre em qualquer produto (ex: Nike Air Jordan)
+2. Abra o widget
+3. Digite: "que producto estoy viendo?"
+4. ✅ Bot responde com o nome do produto!
+
+Teste 3 - Carrinho:
+──────────────────
+1. Adicione produtos ao carrinho
+2. Vá para o carrinho
+3. Abra o widget
+4. Digite: "cuántos items tengo?"
+5. ✅ Bot responde a quantidade!
+
+═══════════════════════════════════════════════════════════════════
+
+⚙️ CONFIGURAÇÃO (OPCIONAL)
+═══════════════════════════════════════════════════════════════════
+
+Vá em: Configuración → SNKHOUSE Widget
+
+Opções disponíveis:
+───────────────────
+☑️ Activar Widget          → Liga/desliga o widget
+📍 Posición                → Direita ou esquerda
+📏 Ancho (px)              → Largura (300-600)
+📏 Alto (px)               → Altura (400-800)
+
+Configuração padrão (já funciona perfeitamente):
+────────────────────────────────────────────────
+✅ Activar Widget: Marcado
+📍 Posición: Abajo a la derecha
+📏 Ancho: 400 px
+📏 Alto: 600 px
+
+═══════════════════════════════════════════════════════════════════
+
+🐛 PROBLEMAS?
+═══════════════════════════════════════════════════════════════════
+
+Widget não aparece?
+───────────────────
+1. Limpe cache do WordPress
+2. Limpe cache do navegador (Ctrl+Shift+R)
+3. Verifique se plugin está ativado
+4. Vá em Configuración → SNKHOUSE Widget
+5. Verifique se "Activar Widget" está marcado
+
+Widget não carrega?
+───────────────────
+1. Pressione F12 → Console
+2. Procure erros em vermelho
+3. Tire print e me envie
+
+Context Awareness não funciona?
+───────────────────────────────
+1. Pressione F12 → Console
+2. Procure por: "📤 Enviando contexto"
+3. Se não aparecer, me avise
+
+═══════════════════════════════════════════════════════════════════
+
+✅ CHECKLIST
+═══════════════════════════════════════════════════════════════════
+
+□ Plugin instalado (snkhouse-widget.zip)
+□ Plugin ativado
+□ Widget aparece no site
+□ Widget abre quando clicado
+□ Bot responde "hola"
+□ Console mostra mensagens (F12)
+□ Bot reconhece produto
+□ Bot reconhece carrinho
+□ Funciona em desktop
+□ Funciona em mobile
+
+═══════════════════════════════════════════════════════════════════
+
+📚 DOCUMENTAÇÃO COMPLETA
+═══════════════════════════════════════════════════════════════════
+
+📄 COMO_INSTALAR.md    → Guia completo de instalação
+📄 readme.txt          → Documentação do plugin
+📄 snkhouse-widget.php → Código-fonte do plugin
+
+═══════════════════════════════════════════════════════════════════
+
+🎉 PRONTO!
+═══════════════════════════════════════════════════════════════════
+
+O widget agora está funcionando em snkhouse.com com:
+
+✅ Chat com IA em tempo real
+✅ Context Awareness (sabe onde o usuário está)
+✅ Product Cards (produtos bonitos no chat)
+✅ Add to Cart (adicionar direto do chat)
+✅ Conversation History (histórico salvo)
+✅ Analytics (métricas de uso)
+✅ Responsive Design (desktop + mobile)
+✅ Streaming (respostas como ChatGPT)
+
+═══════════════════════════════════════════════════════════════════
+
+Desenvolvido 100% com Claude AI 🤖
+GitHub: https://github.com/oldmoneygit/snkhouse-bot
+
+═══════════════════════════════════════════════════════════════════
