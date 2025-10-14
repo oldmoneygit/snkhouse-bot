@@ -1,8 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "bash build-widget.sh",
+  "buildCommand": "pnpm install --frozen-lockfile && pnpm build --filter=@snkhouse/database --filter=@snkhouse/analytics --filter=@snkhouse/integrations --filter=@snkhouse/ai-agent && cd apps/widget && pnpm build",
   "outputDirectory": "apps/widget/.next",
-  "installCommand": "echo 'Install handled by build script'",
+  "installCommand": "pnpm install --frozen-lockfile",
   "framework": null,
   "devCommand": "cd apps/widget && pnpm dev"
 }
