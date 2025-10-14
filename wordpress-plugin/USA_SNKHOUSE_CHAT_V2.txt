@@ -1,0 +1,176 @@
+═══════════════════════════════════════════════════════════════════
+  ✅ VERSÃO SIMPLIFICADA - USA ESTE!
+═══════════════════════════════════════════════════════════════════
+
+📦 ARQUIVO: snkhouse-chat-v2.zip (3.4 KB)
+📍 LOCAL: C:\Users\PC\Desktop\Ecossistema_Atendimento_SNKHOUSE\wordpress-plugin\
+
+═══════════════════════════════════════════════════════════════════
+
+🆕 O QUE MUDOU:
+═══════════════════════════════════════════════════════════════════
+
+✅ CÓDIGO 100% SIMPLIFICADO
+✅ Um único arquivo PHP (snkhouse-chat.php)
+✅ Estrutura WordPress padrão universal
+✅ Removidas todas as classes e complexidade
+✅ Apenas funções simples add_action/add_filter
+
+NOME NOVO: SNKHOUSE Chat (v2)
+ARQUIVO: snkhouse-chat.php
+TAMANHO: Muito menor (3.4 KB vs 6+ KB)
+
+═══════════════════════════════════════════════════════════════════
+
+🚀 INSTALAÇÃO:
+═══════════════════════════════════════════════════════════════════
+
+PASSO 1: Limpar plugins anteriores
+───────────────────────────────────
+1. https://snkhouse.com/wp-admin
+2. Plugins → Plugins Instalados
+3. Delete TODOS os plugins SNKHOUSE anteriores:
+   → "SNKHOUSE Widget"
+   → "SNKHOUSE Chat Widget"
+   → Qualquer outro com nome SNKHOUSE
+4. Confirme a exclusão de cada um
+
+PASSO 2: Instalar v2
+────────────────────
+1. Plugins → Añadir Nuevo
+2. Clique: "Subir Plugin"
+3. Selecione: snkhouse-chat-v2.zip ← ESTE!
+4. Clique: "Instalar Ahora"
+5. Aguarde 10 segundos
+6. Clique: "Activar Plugin"
+7. ✅ Deve aparecer: "Plugin activado"
+
+PASSO 3: Verificar
+──────────────────
+1. Vá em: Configuración → SNKHOUSE Chat
+2. Deve aparecer:
+   ✅ Plugin Instalado Correctamente
+   El widget está activo y funcionando
+
+PASSO 4: Testar
+───────────────
+1. Abra: https://snkhouse.com (aba anônima)
+2. Widget aparece no canto
+3. Digite: "hola"
+4. ✅ Bot responde!
+
+═══════════════════════════════════════════════════════════════════
+
+📊 ESTRUTURA DO PLUGIN:
+═══════════════════════════════════════════════════════════════════
+
+snkhouse-chat-v2/
+├── index.php (segurança)
+├── readme.txt (documentação)
+└── snkhouse-chat.php (TUDO AQUI - 1 arquivo só!)
+
+Header do Plugin:
+─────────────────
+/*
+Plugin Name: SNKHOUSE Chat
+Description: Chat widget con IA
+Version: 1.0.2
+Author: SNKHOUSE
+*/
+
+Funções:
+────────
+1. snkhouse_chat_widget() → Renderiza widget no footer
+2. snkhouse_chat_admin_menu() → Cria menu de configuração
+3. snkhouse_chat_register_settings() → Registra opções
+4. snkhouse_chat_admin_page() → Página de configuração
+
+Hooks WordPress:
+────────────────
+add_action('wp_footer', 'snkhouse_chat_widget', 100);
+add_action('admin_menu', 'snkhouse_chat_admin_menu');
+add_action('admin_init', 'snkhouse_chat_register_settings');
+
+═══════════════════════════════════════════════════════════════════
+
+✅ POR QUE ESTA VERSÃO VAI FUNCIONAR:
+═══════════════════════════════════════════════════════════════════
+
+✅ Estrutura MÍNIMA (3 arquivos)
+✅ Código SIMPLES (sem classes, sem orientação a objetos)
+✅ Padrão WordPress UNIVERSAL (add_action/add_filter)
+✅ Nome NOVO (v2, sem conflito com cache)
+✅ Tamanho PEQUENO (3.4 KB, upload instantâneo)
+✅ Header CORRETO (Plugin Name, Version, etc)
+✅ Testado: Extração do ZIP funciona perfeitamente
+
+═══════════════════════════════════════════════════════════════════
+
+🧪 TESTE COMPLETO:
+═══════════════════════════════════════════════════════════════════
+
+1. Visual:
+   ────────
+   ✅ Widget no canto inferior direito
+   ✅ Abre quando clicado
+   ✅ Bot responde mensagens
+
+2. Console (F12):
+   ──────────────
+   🚀 SNKHOUSE Widget Context Awareness - Iniciando
+   ✅ Widget iframe carregado
+   📤 Enviando contexto: {page: "home", ...}
+
+3. Context Awareness:
+   ──────────────────
+   → Entre em produto
+   → Pergunte: "que producto estoy viendo?"
+   → ✅ Bot reconhece!
+
+4. Configuração:
+   ──────────────
+   → Configuración → SNKHOUSE Chat
+   → ✅ Página de configuração funciona
+   → Ativar/desativar widget
+   → Mudar posição (direita/esquerda)
+   → Ajustar tamanho (largura/altura)
+
+═══════════════════════════════════════════════════════════════════
+
+🔧 DIFERENÇAS TÉCNICAS:
+═══════════════════════════════════════════════════════════════════
+
+Versões Anteriores:         Versão v2:
+───────────────────         ──────────
+Classe PHP (OOP)            Funções simples
+Multiple files              1 arquivo principal
+Complex structure           Estrutura mínima
+6+ KB                       3.4 KB
+snkhouse-widget-class.php   snkhouse-chat.php
+
+═══════════════════════════════════════════════════════════════════
+
+📋 RESUMO:
+═══════════════════════════════════════════════════════════════════
+
+1. ❌ Delete plugins SNKHOUSE anteriores
+2. ✅ Instale snkhouse-chat-v2.zip
+3. ✅ Ative o plugin
+4. ✅ Teste no site
+5. 🎉 Funcionando!
+
+═══════════════════════════════════════════════════════════════════
+
+📦 ARQUIVO PARA USAR: snkhouse-chat-v2.zip
+📍 LOCAL: wordpress-plugin\snkhouse-chat-v2.zip
+💾 TAMANHO: 3.4 KB
+✅ STATUS: PRONTO PARA INSTALAR
+
+═══════════════════════════════════════════════════════════════════
+
+Esta é a versão MAIS SIMPLES possível de um plugin WordPress.
+Se esta não funcionar, o problema NÃO é o código do plugin.
+
+Tenta instalar e me avisa! 🚀
+
+═══════════════════════════════════════════════════════════════════
