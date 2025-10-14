@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "pnpm run build:widget",
+  "buildCommand": "pnpm -w run build:widget",
   "outputDirectory": "apps/widget/.next",
   "installCommand": "pnpm install --frozen-lockfile",
   "framework": null
