@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "bash build-widget.sh",
+  "buildCommand": "pnpm build:widget",
   "outputDirectory": "apps/widget/.next",
-  "installCommand": "echo 'Install in build script'",
+  "installCommand": "echo 'Skip install'",
   "framework": null
 }

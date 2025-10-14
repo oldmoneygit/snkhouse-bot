@@ -12,6 +12,7 @@
     "dev:admin": "pnpm --filter @snkhouse/admin dev",
     "dev:widget": "pnpm --filter @snkhouse/widget dev",
     "build": "turbo run build",
+    "build:widget": "pnpm install && pnpm --filter @snkhouse/database build && pnpm --filter @snkhouse/analytics build && pnpm --filter @snkhouse/integrations build && pnpm --filter @snkhouse/ai-agent build && pnpm --filter @snkhouse/widget build",
     "test": "turbo run test",
     "lint": "turbo run lint",
     "type-check": "turbo run type-check",
