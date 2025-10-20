@@ -2,17 +2,7 @@
 apps/whatsapp-service
 apps/admin
 
-# Ignorar packages que não são necessários para o widget
-packages/agent-builder
-packages/ai-agent
-
-# Ignorar arquivos de desenvolvimento
-**/.next
-**/node_modules
-**/.env.local
-**/.env*.local
-
-# Ignorar documentação
+# Ignorar documentação e scripts (não afetam o build)
 docs/
 scripts/
 wordpress-plugin/
