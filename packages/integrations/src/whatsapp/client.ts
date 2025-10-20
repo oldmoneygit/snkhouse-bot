@@ -5,6 +5,12 @@ export interface SendMessageParams {
   message: string;
 }
 
+export interface SendImageMessageParams {
+  to: string; // Número de telefone no formato internacional (sem +)
+  imageUrl: string; // URL pública da imagem (HTTP/HTTPS)
+  caption?: string; // Legenda opcional da imagem
+}
+
 export interface MarkAsReadParams {
   messageId: string;
 }
@@ -181,6 +187,140 @@ export class WhatsAppClient {
       if (error.name === 'AbortError') {
         console.error('[WhatsAppClient] ⏱️ REQUEST ABORTED - Meta API timeout (8s exceeded)');
         throw new Error('Meta API timeout - request took too long (8s)');
+      }
+
+      console.error('[WhatsAppClient] 📋 Full error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Envia uma imagem via WhatsApp
+   * Usa método de link direto (WhatsApp faz cache por 10 min)
+   */
+  async sendImageMessage({ to, imageUrl, caption }: SendImageMessageParams): Promise<{ messageId: string }> {
+    console.log('[WhatsAppClient] 📸 sendImageMessage called');
+    console.log('[WhatsAppClient] 📋 Parameters:', {
+      to: to.slice(0, 4) + '***',
+      imageUrl: imageUrl.substring(0, 50) + '...',
+      hasCaption: !!caption,
+    });
+
+    try {
+      // Sanitizar número (remover caracteres não numéricos)
+      console.log('[WhatsAppClient] 🧹 Sanitizing phone number...');
+      const sanitizedPhone = to.replace(/\D/g, '');
+      console.log('[WhatsAppClient] ✅ Sanitized phone:', sanitizedPhone.slice(0, 4) + '***');
+
+      // Validar phoneNumberId e access token
+      if (!this.phoneNumberId) {
+        throw new Error('phoneNumberId is missing!');
+      }
+      if (!this.accessToken) {
+        throw new Error('Access token is missing!');
+      }
+
+      // Preparar payload (método de link direto)
+      console.log('[WhatsAppClient] 📦 Preparing image message payload...');
+      const payload: any = {
+        messaging_product: 'whatsapp',
+        recipient_type: 'individual',
+        to: sanitizedPhone,
+        type: 'image',
+        image: {
+          link: imageUrl,
+        },
+      };
+
+      // Adicionar caption se fornecido
+      if (caption) {
+        payload.image.caption = caption;
+      }
+
+      console.log('[WhatsAppClient] 📊 Final payload:', JSON.stringify(payload, null, 2));
+
+      // Preparar URL
+      const url = `https://graph.facebook.com/v22.0/${this.phoneNumberId}/messages`;
+      console.log('[WhatsAppClient] 🔗 Full URL:', url);
+
+      // Criar AbortController para timeout
+      const controller = new AbortController();
+      const TIMEOUT_MS = 15000; // 15 segundos (imagens podem demorar mais)
+
+      const timeoutId = setTimeout(() => {
+        console.error('[WhatsAppClient] ⏱️ TIMEOUT! Aborting request after', TIMEOUT_MS, 'ms');
+        controller.abort();
+      }, TIMEOUT_MS);
+
+      console.log('[WhatsAppClient] ⏱️ Timeout set to:', TIMEOUT_MS, 'ms');
+
+      // Preparar headers
+      const headers = {
+        'Authorization': `Bearer ${this.accessToken}`,
+        'Content-Type': 'application/json',
+      };
+
+      // FAZER A CHAMADA FETCH
+      console.log('[WhatsAppClient] 🚀 Making fetch request NOW...');
+      const startTime = Date.now();
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+      const duration = Date.now() - startTime;
+
+      console.log('[WhatsAppClient] ✅ Response received in', duration, 'ms');
+      console.log('[WhatsAppClient] 📊 Status:', response.status, response.statusText);
+
+      // Ler response body
+      const responseText = await response.text();
+      console.log('[WhatsAppClient] 📄 Response body:', responseText);
+
+      // Verificar se foi sucesso
+      if (!response.ok) {
+        console.error('[WhatsAppClient] ❌ API Error Response:', {
+          status: response.status,
+          statusText: response.statusText,
+          body: responseText,
+        });
+        throw new Error(`Meta API error: ${response.status} - ${responseText}`);
+      }
+
+      // Parse JSON
+      const data = JSON.parse(responseText);
+      console.log('[WhatsAppClient] 📊 Parsed response data:', JSON.stringify(data, null, 2));
+
+      // Extrair messageId
+      const messageId = data.messages?.[0]?.id;
+
+      if (!messageId) {
+        console.error('[WhatsAppClient] ❌ No messageId in response!');
+        throw new Error('No messageId in Meta API response');
+      }
+
+      console.log('[WhatsAppClient] ✅✅✅ IMAGE MESSAGE SENT SUCCESSFULLY! ✅✅✅');
+      console.log('[WhatsAppClient] 🆔 Message ID:', messageId);
+
+      return { messageId };
+
+    } catch (error: any) {
+      console.error('[WhatsAppClient] ❌ FETCH ERROR:', {
+        name: error.name,
+        message: error.message,
+        code: error.code,
+        cause: error.cause,
+        isAbortError: error.name === 'AbortError',
+        isTimeout: error.message?.includes('timeout'),
+      });
+
+      if (error.name === 'AbortError') {
+        console.error('[WhatsAppClient] ⏱️ REQUEST ABORTED - Meta API timeout (15s exceeded)');
+        throw new Error('Meta API timeout - image request took too long (15s)');
       }
 
       console.error('[WhatsAppClient] 📋 Full error:', error);

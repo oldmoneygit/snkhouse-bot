@@ -71,6 +71,12 @@ export default async function DashboardPage() {
                 Conversas
               </Link>
               <Link
+                href="/whatsapp"
+                className="text-gray-600 hover:text-gray-900"
+              >
+                WhatsApp
+              </Link>
+              <Link
                 href="/analytics"
                 className="text-gray-600 hover:text-gray-900"
               >

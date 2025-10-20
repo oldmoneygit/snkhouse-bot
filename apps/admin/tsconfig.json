@@ -3,7 +3,10 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@snkhouse/database": ["../../packages/database/src"],
+      "@snkhouse/integrations": ["../../packages/integrations/src"],
+      "@snkhouse/analytics": ["../../packages/analytics/src"]
     },
     "plugins": [
       {

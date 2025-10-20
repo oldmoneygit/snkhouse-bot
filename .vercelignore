@@ -1,0 +1,23 @@
+# Ignorar outros apps do monorepo durante build do widget
+apps/whatsapp-service
+apps/admin
+
+# Ignorar packages que não são necessários para o widget
+packages/agent-builder
+packages/ai-agent
+
+# Ignorar arquivos de desenvolvimento
+**/.next
+**/node_modules
+**/.env.local
+**/.env*.local
+
+# Ignorar documentação
+docs/
+scripts/
+wordpress-plugin/
+
+# Ignorar arquivos de teste
+**/*.test.ts
+**/*.test.tsx
+**/__tests__
