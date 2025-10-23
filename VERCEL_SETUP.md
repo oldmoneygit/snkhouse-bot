@@ -2,18 +2,20 @@
 
 Este projeto usa **2 projetos separados** no Vercel para deployar os diferentes apps do monorepo.
 
+> ⚠️ **IMPORTANTE**: Configure EXATAMENTE como descrito abaixo. Qualquer desvio causará erros de build.
+
 ---
 
 ## 📦 Projetos no Vercel
 
 ### 1️⃣ **SNKHOUSE Widget** (Chat Web)
-- **Nome sugerido**: `snkhouse-widget` ou `snkhouse-bot-widget`
-- **Domínio**: widget.snkhouse.app (ou custom domain)
+- **Nome sugerido**: `snkhouse-widget`
+- **Domínio**: Gerado automaticamente pelo Vercel
 - **Propósito**: Widget de chat embarcável nos sites
 
 ### 2️⃣ **SNKHOUSE WhatsApp Service** (API Backend)
-- **Nome sugerido**: `snkhouse-whatsapp` ou `snkhouse-bot-api`
-- **Domínio**: api.snkhouse.app (ou custom domain)
+- **Nome sugerido**: `snkhouse-whatsapp`
+- **Domínio**: Gerado automaticamente pelo Vercel
 - **Propósito**: Webhook e processamento de mensagens WhatsApp
 
 ---
@@ -22,17 +24,31 @@ Este projeto usa **2 projetos separados** no Vercel para deployar os diferentes 
 
 ### 🔵 Projeto 1: Widget
 
-1. **Criar novo projeto** no Vercel
-2. **Import Git Repository**: Selecione o repositório `snkhouse-bot`
-3. **Configure Project**:
+#### Passo 1: Criar Projeto
+1. Acesse https://vercel.com/dashboard
+2. Clique em **"Add New..."** → **"Project"**
+3. **Import Git Repository**: Selecione `snkhouse-bot`
 
-   ```
-   Framework Preset: Next.js
-   Root Directory: apps/widget
-   Build Command: (deixe vazio - usa vercel.json)
-   Output Directory: (deixe vazio - usa vercel.json)
-   Install Command: (deixe vazio - usa vercel.json)
-   ```
+#### Passo 2: Configure Project (CRÍTICO - Copie EXATAMENTE)
+
+```
+Project Name: snkhouse-widget (ou o que preferir)
+
+Framework Preset: Next.js
+
+Root Directory: apps/widget
+
+Build Command: cd ../.. && pnpm install && pnpm --filter @snkhouse/widget build
+
+Output Directory: .next
+
+Install Command: (DEIXE VAZIO)
+```
+
+**⚠️ ATENÇÃO**:
+- Root Directory deve ser **EXATAMENTE** `apps/widget`
+- Build Command deve ter o `cd ../..` no início
+- Output Directory deve ser `.next` (não `apps/widget/.next`)
 
 4. **Environment Variables** (Settings → Environment Variables):
 
@@ -58,17 +74,31 @@ Este projeto usa **2 projetos separados** no Vercel para deployar os diferentes 
 
 ### 🟢 Projeto 2: WhatsApp Service
 
-1. **Criar novo projeto** no Vercel
-2. **Import Git Repository**: Selecione o **mesmo repositório** `snkhouse-bot`
-3. **Configure Project**:
+#### Passo 1: Criar Projeto
+1. Acesse https://vercel.com/dashboard
+2. Clique em **"Add New..."** → **"Project"**
+3. **Import Git Repository**: Selecione o **MESMO** repositório `snkhouse-bot`
 
-   ```
-   Framework Preset: Next.js
-   Root Directory: apps/whatsapp-service
-   Build Command: (deixe vazio - usa vercel.json)
-   Output Directory: (deixe vazio - usa vercel.json)
-   Install Command: (deixe vazio - usa vercel.json)
-   ```
+#### Passo 2: Configure Project (CRÍTICO - Copie EXATAMENTE)
+
+```
+Project Name: snkhouse-whatsapp (ou o que preferir)
+
+Framework Preset: Next.js
+
+Root Directory: apps/whatsapp-service
+
+Build Command: cd ../.. && pnpm install && pnpm --filter @snkhouse/whatsapp-service build
+
+Output Directory: .next
+
+Install Command: (DEIXE VAZIO)
+```
+
+**⚠️ ATENÇÃO**:
+- Root Directory deve ser **EXATAMENTE** `apps/whatsapp-service`
+- Build Command deve ter o `cd ../..` no início
+- Output Directory deve ser `.next` (não `apps/whatsapp-service/.next`)
 
 4. **Environment Variables** (Settings → Environment Variables):
 
@@ -97,14 +127,47 @@ Este projeto usa **2 projetos separados** no Vercel para deployar os diferentes 
 
 ---
 
+## 🔧 Se Você JÁ Criou os Projetos (Atualizar Configuração)
+
+Se você já criou os projetos e eles estão dando erro, siga estes passos:
+
+### Para Cada Projeto (Widget e WhatsApp):
+
+1. **Acesse o projeto** no Vercel Dashboard
+2. **Settings** → **General**
+3. **Atualize estas configurações**:
+
+#### Widget:
+```
+Root Directory: apps/widget
+Build Command: cd ../.. && pnpm install && pnpm --filter @snkhouse/widget build
+Output Directory: .next
+Install Command: (APAGUE qualquer valor, deixe vazio)
+```
+
+#### WhatsApp Service:
+```
+Root Directory: apps/whatsapp-service
+Build Command: cd ../.. && pnpm install && pnpm --filter @snkhouse/whatsapp-service build
+Output Directory: .next
+Install Command: (APAGUE qualquer valor, deixe vazio)
+```
+
+4. **Salve** as configurações
+5. **Deployments** → Selecione o commit mais recente (a0b1981 ou posterior)
+6. Clique nos **3 pontinhos** → **Redeploy**
+7. **Use existing Build Cache**: DESMARQUE (para garantir build limpo)
+8. Clique em **Redeploy**
+
+---
+
 ## 🔄 Como Funciona
 
-### Arquivos de Configuração
+### Configuração
 
-Cada app tem seu próprio `vercel.json`:
+A configuração de build é feita **INTEIRAMENTE no Vercel Dashboard**, não há arquivos `vercel.json` nos apps.
 
-- **apps/widget/vercel.json**: Configuração do widget
-- **apps/whatsapp-service/vercel.json**: Configuração do whatsapp service
+Isso evita conflitos entre a configuração do arquivo e a configuração do Dashboard.
 
 ### Build Process
 
