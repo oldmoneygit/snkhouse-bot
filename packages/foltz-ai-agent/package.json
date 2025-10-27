@@ -1,0 +1,19 @@
+{
+  "name": "@snkhouse/foltz-ai-agent",
+  "version": "0.1.0",
+  "private": true,
+  "description": "FOLTZ Fanwear AI agent with custom system prompt and tools",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@snkhouse/database": "workspace:*",
+    "@snkhouse/integrations": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.19",
+    "typescript": "^5.3.3"
+  }
+}

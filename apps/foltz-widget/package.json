@@ -1,0 +1,40 @@
+{
+  "name": "@snkhouse/foltz-widget",
+  "version": "0.1.0",
+  "private": true,
+  "description": "FOLTZ Fanwear chat widget for customer support",
+  "scripts": {
+    "dev": "next dev --port 3002",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "^2.0.27",
+    "@ai-sdk/openai": "^2.0.51",
+    "@snkhouse/analytics": "workspace:*",
+    "@snkhouse/database": "workspace:*",
+    "@snkhouse/foltz-ai-agent": "workspace:*",
+    "@snkhouse/integrations": "workspace:*",
+    "ai": "^3.4.33",
+    "dompurify": "^3.3.0",
+    "next": "^14.2.0",
+    "openai": "^6.3.0",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/dompurify": "^3.0.5",
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^8.57.1",
+    "eslint-config-next": "^14.2.0",
+    "postcss": "^8.4.47",
+    "tailwindcss": "^3.4.0",
+    "typescript": "^5.3.3"
+  }
+}

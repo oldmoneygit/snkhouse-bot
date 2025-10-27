@@ -1,0 +1,315 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* =====================================================
+   FOLTZ Fanwear - Global Styles
+   ===================================================== */
+
+@layer base {
+  body {
+    @apply bg-white text-foltz-black;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu',
+      'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* =====================================================
+   Animations
+   ===================================================== */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes bounce {
+  0%,
+  100% {
+    transform: translateY(-25%);
+    animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+  }
+  50% {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+  }
+}
+
+@keyframes ping {
+  75%,
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+/* =====================================================
+   Custom Scrollbar (FOLTZ colors)
+   ===================================================== */
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #DAF10D;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #C5DB0A;
+}
+
+/* =====================================================
+   Message Bubbles
+   ===================================================== */
+
+.message-bubble {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.message-bubble.user {
+  @apply bg-foltz-yellow text-foltz-black;
+}
+
+.message-bubble.assistant {
+  @apply bg-white border border-gray-200 text-foltz-black;
+}
+
+/* =====================================================
+   Loading Dots
+   ===================================================== */
+
+.loading-dots {
+  display: flex;
+  gap: 4px;
+}
+
+.loading-dots span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #DAF10D;
+  animation: bounce 1.4s infinite ease-in-out both;
+}
+
+.loading-dots span:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.loading-dots span:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+/* =====================================================
+   Skeleton Loading
+   ===================================================== */
+
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* =====================================================
+   Chat Widget Specific
+   ===================================================== */
+
+.chat-container {
+  contain: layout style paint;
+}
+
+.streaming-message {
+  contain: layout style;
+}
+
+/* =====================================================
+   Toast Notifications
+   ===================================================== */
+
+.toast {
+  animation: slideDown 0.3s ease-out;
+}
+
+.toast.success {
+  @apply bg-green-500 text-white;
+}
+
+.toast.error {
+  @apply bg-red-500 text-white;
+}
+
+.toast.info {
+  @apply bg-foltz-yellow text-foltz-black;
+}
+
+/* =====================================================
+   Floating Button (FOLTZ branding)
+   ===================================================== */
+
+.floating-button {
+  @apply bg-foltz-yellow-gradient;
+  box-shadow: 0 4px 20px rgba(218, 241, 13, 0.4);
+  transition: all 0.3s ease;
+}
+
+.floating-button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 25px rgba(218, 241, 13, 0.6);
+}
+
+.floating-button:active {
+  transform: scale(0.95);
+}
+
+/* Ping animation on button */
+.floating-button::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: inherit;
+  animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* =====================================================
+   Input Field
+   ===================================================== */
+
+.chat-input {
+  @apply w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2;
+  focus-ring-color: #DAF10D;
+  transition: all 0.2s ease;
+}
+
+.chat-input:focus {
+  @apply border-foltz-yellow ring-2 ring-foltz-yellow ring-opacity-50;
+}
+
+/* =====================================================
+   Product Cards
+   ===================================================== */
+
+.product-card {
+  @apply bg-white border border-gray-200 rounded-lg overflow-hidden transition-all duration-300;
+}
+
+.product-card:hover {
+  @apply shadow-lg border-foltz-yellow;
+  transform: translateY(-4px);
+}
+
+.product-card-image {
+  @apply w-full h-48 object-cover;
+  transition: transform 0.3s ease;
+}
+
+.product-card:hover .product-card-image {
+  transform: scale(1.05);
+}
+
+/* =====================================================
+   Buttons (FOLTZ style)
+   ===================================================== */
+
+.btn-primary {
+  @apply bg-foltz-yellow hover:bg-foltz-yellow-500 text-foltz-black font-semibold py-2 px-4 rounded-lg transition-all duration-200;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(218, 241, 13, 0.4);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-secondary {
+  @apply bg-foltz-black hover:bg-foltz-black-800 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200;
+}
+
+/* =====================================================
+   Modal Overlay
+   ===================================================== */
+
+.modal-overlay {
+  @apply fixed inset-0 bg-black bg-opacity-50 z-40;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modal-content {
+  animation: slideInUp 0.3s ease-out;
+}
+
+/* =====================================================
+   Utility Classes
+   ===================================================== */
+
+.text-gradient-foltz {
+  background: linear-gradient(135deg, #DAF10D 0%, #C5DB0A 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.shadow-foltz {
+  box-shadow: 0 4px 20px rgba(218, 241, 13, 0.2);
+}
+
+.border-gradient-foltz {
+  border-image: linear-gradient(135deg, #DAF10D 0%, #C5DB0A 100%) 1;
+}
